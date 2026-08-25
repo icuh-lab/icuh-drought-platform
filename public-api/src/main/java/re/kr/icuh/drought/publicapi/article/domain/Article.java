@@ -4,16 +4,15 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.testcontainers.shaded.com.google.common.hash.Hashing;
 import re.kr.icuh.drought.publicapi.article.dto.UpdateArticleRequestJsonConverter;
 import re.kr.icuh.drought.publicapi.article.dto.request.UpdateArticleRequest;
 import re.kr.icuh.drought.persistence.article.entity.DocumentType;
 import re.kr.icuh.drought.persistence.article.entity.SubjectDomain;
 import re.kr.icuh.drought.publicapi.file.domain.FileEntity;
+import re.kr.icuh.drought.common.crypto.Sha256;
 import re.kr.icuh.drought.common.error.BusinessException;
 import re.kr.icuh.drought.common.error.ErrorCode;
 
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -105,7 +104,7 @@ public class Article {
     }
 
     public String sha256Encode(String tempPassword) {
-        return Hashing.sha256().hashString(tempPassword, StandardCharsets.UTF_8).toString();
+        return Sha256.hexOf(tempPassword);
     }
 
     public void delete() {

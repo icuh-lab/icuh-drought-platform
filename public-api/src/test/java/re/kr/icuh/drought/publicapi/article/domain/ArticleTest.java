@@ -82,4 +82,43 @@ class ArticleTest {
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())
                 .isEqualTo(ErrorCode.INVALID_INPUT);
     }
+
+    @Test
+    @DisplayName("sha256Encode()는 ASCII 문자열을 기존 구현과 동일한 SHA-256 hex로 인코딩한다")
+    void sha256Encode_ASCII_문자열을_해싱한다() {
+        // given
+        Article article = createArticle();
+
+        // when
+        String hex = article.sha256Encode("test1234");
+
+        // then
+        assertThat(hex).isEqualTo("937e8d5fbb48bd4949536cd65b8d35c426b80d2f830c5c308e2cdec422ae2244");
+    }
+
+    @Test
+    @DisplayName("sha256Encode()는 한글(UTF-8 멀티바이트) 문자열을 기존 구현과 동일한 SHA-256 hex로 인코딩한다")
+    void sha256Encode_한글_문자열을_해싱한다() {
+        // given
+        Article article = createArticle();
+
+        // when
+        String hex = article.sha256Encode("비밀번호1234");
+
+        // then
+        assertThat(hex).isEqualTo("a0191747a9c89b6b08303dc7f1497b4d34ebd44e978045eb0d5da4c04f04705f");
+    }
+
+    @Test
+    @DisplayName("sha256Encode()는 빈 문자열을 기존 구현과 동일한 SHA-256 hex로 인코딩한다")
+    void sha256Encode_빈_문자열을_해싱한다() {
+        // given
+        Article article = createArticle();
+
+        // when
+        String hex = article.sha256Encode("");
+
+        // then
+        assertThat(hex).isEqualTo("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    }
 }
