@@ -244,8 +244,19 @@ documentTypeCode, subjectDomainCode, source, newFiles`, 중첩
 - `publicapi.article.dto.UpdateArticleRequestJsonConverter`
 - `adminapi.core.api.controller.v2.UpdateArticleRequestJsonConverter`
 
-둘을 `re.kr.icuh.drought.persistence.article.converter.UpdateArticleRequestJsonConverter`
-한 벌로 합쳐 **`core-persistence`** 에 둔다(엔티티와 함께 있어야 할 영속성 관심사다).
+둘의 **실질 내용은 동일하다.** 유일한 차이는 admin 쪽 클래스 선언에 붙은
+**사용되지 않는 타입 파라미터 `<T>`** 다:
+```java
+// public
+public class UpdateArticleRequestJsonConverter implements AttributeConverter<UpdateArticleRequest, String>
+// admin  ← <T>가 어디에도 쓰이지 않는다
+public class UpdateArticleRequestJsonConverter<T> implements AttributeConverter<UpdateArticleRequest, String>
+```
+**`<T>` 없는 public 버전을 채택한다.** admin의 `@Convert(converter = UpdateArticleRequestJsonConverter.class)`는
+현재 raw 타입으로 쓰이고 있어 `<T>`를 없애도 영향이 없다.
+
+통합본을 `re.kr.icuh.drought.persistence.article.converter.UpdateArticleRequestJsonConverter`
+한 벌로 만들어 **`core-persistence`** 에 둔다(엔티티와 함께 있어야 할 영속성 관심사다).
 `adminapi.core.api.controller.v2.NewFileRequestJsonConverter`도 같은 패키지로 옮긴다.
 
 `core-persistence/build.gradle`에 `implementation 'com.fasterxml.jackson.core:jackson-databind'`가
