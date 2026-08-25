@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- 변수 설정 -->
+    <property name="LOGS_ROOT_PATH" value="${user.home}/log/spring"/>
+
+    <appender name="APP_LOG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 파일경로 설정 -->
+        <file>${LOGS_ROOT_PATH}/platform.log</file>
+        <!-- 출력 패턴 설정 -->
+        <encoder>
+            <pattern>%clr(%d{HH:mm:ss.SSS}){faint}|%clr(${level:-%5p})|%32X{traceId:-},%16X{spanId:-}|%clr(%-40.40logger{39}){cyan}%clr(|){faint}%m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+
+        <!-- 롤링 정책 설정 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 로그 파일 이름 패턴 -->
+            <fileNamePattern>${LOGS_ROOT_PATH}/%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- 파일 최대 크기-->
+            <maxFileSize>10MB</maxFileSize>
+            <!-- 파일 최대 보관일 -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <logger name="org.springframework" level="WARN"/>
+
+    <root level="INFO">
+        <appender-ref ref="APP_LOG_FILE"/>
+    </root>
+</configuration>

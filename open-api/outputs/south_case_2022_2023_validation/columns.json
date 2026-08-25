@@ -1,0 +1,812 @@
+[
+  {
+    "TABLE_NAME": "agg_daily_count",
+    "COLUMN_NAME": "stat_date",
+    "DATA_TYPE": "date"
+  },
+  {
+    "TABLE_NAME": "agg_daily_count",
+    "COLUMN_NAME": "article_count",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "agg_daily_region_field_count",
+    "COLUMN_NAME": "stat_date",
+    "DATA_TYPE": "date"
+  },
+  {
+    "TABLE_NAME": "agg_daily_region_field_count",
+    "COLUMN_NAME": "sido",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "agg_daily_region_field_count",
+    "COLUMN_NAME": "impact_code",
+    "DATA_TYPE": "char"
+  },
+  {
+    "TABLE_NAME": "agg_daily_region_field_count",
+    "COLUMN_NAME": "article_count",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "agg_period_grade",
+    "COLUMN_NAME": "granularity",
+    "DATA_TYPE": "enum"
+  },
+  {
+    "TABLE_NAME": "agg_period_grade",
+    "COLUMN_NAME": "dim_type",
+    "DATA_TYPE": "enum"
+  },
+  {
+    "TABLE_NAME": "agg_period_grade",
+    "COLUMN_NAME": "bucket",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "agg_period_grade",
+    "COLUMN_NAME": "dim_key",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "agg_period_grade",
+    "COLUMN_NAME": "impact_code",
+    "DATA_TYPE": "char"
+  },
+  {
+    "TABLE_NAME": "agg_period_grade",
+    "COLUMN_NAME": "grade",
+    "DATA_TYPE": "enum"
+  },
+  {
+    "TABLE_NAME": "agg_period_grade_break",
+    "COLUMN_NAME": "granularity",
+    "DATA_TYPE": "enum"
+  },
+  {
+    "TABLE_NAME": "agg_period_grade_break",
+    "COLUMN_NAME": "dim_type",
+    "DATA_TYPE": "enum"
+  },
+  {
+    "TABLE_NAME": "agg_period_grade_break",
+    "COLUMN_NAME": "bucket",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "agg_period_grade_break",
+    "COLUMN_NAME": "impact_code",
+    "DATA_TYPE": "char"
+  },
+  {
+    "TABLE_NAME": "agg_period_grade_break",
+    "COLUMN_NAME": "grade",
+    "DATA_TYPE": "enum"
+  },
+  {
+    "TABLE_NAME": "agg_period_grade_break",
+    "COLUMN_NAME": "lower_bound",
+    "DATA_TYPE": "double"
+  },
+  {
+    "TABLE_NAME": "daily_market_trends",
+    "COLUMN_NAME": "id",
+    "DATA_TYPE": "bigint"
+  },
+  {
+    "TABLE_NAME": "daily_market_trends",
+    "COLUMN_NAME": "trend_date",
+    "DATA_TYPE": "date"
+  },
+  {
+    "TABLE_NAME": "daily_market_trends",
+    "COLUMN_NAME": "location",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "daily_market_trends",
+    "COLUMN_NAME": "item",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "daily_market_trends",
+    "COLUMN_NAME": "variety",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "daily_market_trends",
+    "COLUMN_NAME": "market_volume",
+    "DATA_TYPE": "bigint"
+  },
+  {
+    "TABLE_NAME": "daily_market_trends",
+    "COLUMN_NAME": "avg_wholesale_price",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "daily_market_trends",
+    "COLUMN_NAME": "created_at",
+    "DATA_TYPE": "timestamp"
+  },
+  {
+    "TABLE_NAME": "daily_market_trends",
+    "COLUMN_NAME": "updated_at",
+    "DATA_TYPE": "timestamp"
+  },
+  {
+    "TABLE_NAME": "daily_price_predictions",
+    "COLUMN_NAME": "id",
+    "DATA_TYPE": "bigint"
+  },
+  {
+    "TABLE_NAME": "daily_price_predictions",
+    "COLUMN_NAME": "prediction_date",
+    "DATA_TYPE": "date"
+  },
+  {
+    "TABLE_NAME": "daily_price_predictions",
+    "COLUMN_NAME": "location",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "daily_price_predictions",
+    "COLUMN_NAME": "item",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "daily_price_predictions",
+    "COLUMN_NAME": "variety",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "daily_price_predictions",
+    "COLUMN_NAME": "predicted_price",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "daily_price_predictions",
+    "COLUMN_NAME": "rate_of_change_from_prev_year",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "daily_price_predictions",
+    "COLUMN_NAME": "change_description",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "daily_price_predictions",
+    "COLUMN_NAME": "indicator_color",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "daily_price_predictions",
+    "COLUMN_NAME": "created_at",
+    "DATA_TYPE": "timestamp"
+  },
+  {
+    "TABLE_NAME": "daily_price_predictions",
+    "COLUMN_NAME": "updated_at",
+    "DATA_TYPE": "timestamp"
+  },
+  {
+    "TABLE_NAME": "dam_daily_generation",
+    "COLUMN_NAME": "id",
+    "DATA_TYPE": "bigint"
+  },
+  {
+    "TABLE_NAME": "dam_daily_generation",
+    "COLUMN_NAME": "dam_name",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_daily_generation",
+    "COLUMN_NAME": "dam_code",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_daily_generation",
+    "COLUMN_NAME": "generation_date",
+    "DATA_TYPE": "date"
+  },
+  {
+    "TABLE_NAME": "dam_daily_generation",
+    "COLUMN_NAME": "planned_mwh",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_daily_generation",
+    "COLUMN_NAME": "actual_mwh",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_daily_generation",
+    "COLUMN_NAME": "created_at",
+    "DATA_TYPE": "timestamp"
+  },
+  {
+    "TABLE_NAME": "dam_daily_generation",
+    "COLUMN_NAME": "updated_at",
+    "DATA_TYPE": "timestamp"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "id",
+    "DATA_TYPE": "bigint"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "dam_name",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "dam_code",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "year",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "month",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "hydro_generation_last_year_month_amount",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "hydro_generation_last_year_month_status",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "hydro_generation_last_year_month_rate",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "hydro_generation_last_year_month_color",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "hydro_generation_last_month_amount",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "hydro_generation_last_month_status",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "hydro_generation_last_month_rate",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "hydro_generation_last_month_color",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "average_water_storage_last_month_amount",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "average_water_storage_last_month_status",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "average_water_storage_last_month_rate",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "average_water_storage_last_month_color",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "created_at",
+    "DATA_TYPE": "timestamp"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "COLUMN_NAME": "updated_at",
+    "DATA_TYPE": "timestamp"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_generation",
+    "COLUMN_NAME": "id",
+    "DATA_TYPE": "bigint"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_generation",
+    "COLUMN_NAME": "dam_name",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_generation",
+    "COLUMN_NAME": "dam_code",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_generation",
+    "COLUMN_NAME": "year",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_generation",
+    "COLUMN_NAME": "month",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_generation",
+    "COLUMN_NAME": "planned_mwh",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_generation",
+    "COLUMN_NAME": "actual_mwh",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_generation",
+    "COLUMN_NAME": "created_at",
+    "DATA_TYPE": "timestamp"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_generation",
+    "COLUMN_NAME": "updated_at",
+    "DATA_TYPE": "timestamp"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_predictions",
+    "COLUMN_NAME": "id",
+    "DATA_TYPE": "bigint"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_predictions",
+    "COLUMN_NAME": "dam_name",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_predictions",
+    "COLUMN_NAME": "dam_code",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_predictions",
+    "COLUMN_NAME": "year",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_predictions",
+    "COLUMN_NAME": "month",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_predictions",
+    "COLUMN_NAME": "predicted_power_generation_lower_bound",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_predictions",
+    "COLUMN_NAME": "predicted_power_generation_upper_bound",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_predictions",
+    "COLUMN_NAME": "predicted_water_storage_lower_bound",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_predictions",
+    "COLUMN_NAME": "predicted_water_storage_upper_bound",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_predictions",
+    "COLUMN_NAME": "created_at",
+    "DATA_TYPE": "timestamp"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_predictions",
+    "COLUMN_NAME": "updated_at",
+    "DATA_TYPE": "timestamp"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_reservoir_status",
+    "COLUMN_NAME": "id",
+    "DATA_TYPE": "bigint"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_reservoir_status",
+    "COLUMN_NAME": "dam_name",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_reservoir_status",
+    "COLUMN_NAME": "dam_code",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_reservoir_status",
+    "COLUMN_NAME": "year",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_reservoir_status",
+    "COLUMN_NAME": "month",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_reservoir_status",
+    "COLUMN_NAME": "water_level_elm",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_reservoir_status",
+    "COLUMN_NAME": "water_storage_mcm",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_reservoir_status",
+    "COLUMN_NAME": "created_at",
+    "DATA_TYPE": "timestamp"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_reservoir_status",
+    "COLUMN_NAME": "updated_at",
+    "DATA_TYPE": "timestamp"
+  },
+  {
+    "TABLE_NAME": "drought_article",
+    "COLUMN_NAME": "id",
+    "DATA_TYPE": "bigint"
+  },
+  {
+    "TABLE_NAME": "drought_article",
+    "COLUMN_NAME": "collected_date",
+    "DATA_TYPE": "date"
+  },
+  {
+    "TABLE_NAME": "drought_article",
+    "COLUMN_NAME": "published_at",
+    "DATA_TYPE": "date"
+  },
+  {
+    "TABLE_NAME": "drought_article",
+    "COLUMN_NAME": "sido",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "drought_article",
+    "COLUMN_NAME": "sigungu",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "drought_article",
+    "COLUMN_NAME": "sigungu_code",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "drought_article",
+    "COLUMN_NAME": "weather_factor",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "drought_article",
+    "COLUMN_NAME": "title",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "drought_article",
+    "COLUMN_NAME": "body",
+    "DATA_TYPE": "longtext"
+  },
+  {
+    "TABLE_NAME": "drought_article",
+    "COLUMN_NAME": "title_nouns",
+    "DATA_TYPE": "json"
+  },
+  {
+    "TABLE_NAME": "drought_article",
+    "COLUMN_NAME": "body_nouns",
+    "DATA_TYPE": "json"
+  },
+  {
+    "TABLE_NAME": "drought_article",
+    "COLUMN_NAME": "link",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "drought_article",
+    "COLUMN_NAME": "impact_code",
+    "DATA_TYPE": "char"
+  },
+  {
+    "TABLE_NAME": "drought_article",
+    "COLUMN_NAME": "damage_detail",
+    "DATA_TYPE": "json"
+  },
+  {
+    "TABLE_NAME": "drought_article_region_impact",
+    "COLUMN_NAME": "article_id",
+    "DATA_TYPE": "bigint"
+  },
+  {
+    "TABLE_NAME": "drought_article_region_impact",
+    "COLUMN_NAME": "sido",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "drought_article_region_impact",
+    "COLUMN_NAME": "sigungu",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "drought_article_region_impact",
+    "COLUMN_NAME": "sigungu_code",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "drought_article_region_impact",
+    "COLUMN_NAME": "impact_code",
+    "DATA_TYPE": "char"
+  },
+  {
+    "TABLE_NAME": "drought_article_region_impact",
+    "COLUMN_NAME": "damage_detail",
+    "DATA_TYPE": "json"
+  },
+  {
+    "TABLE_NAME": "drought_article_region_impact",
+    "COLUMN_NAME": "source_order",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "drought_impact_fresh_food_price_index",
+    "COLUMN_NAME": "id",
+    "DATA_TYPE": "bigint"
+  },
+  {
+    "TABLE_NAME": "drought_impact_fresh_food_price_index",
+    "COLUMN_NAME": "province",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "drought_impact_fresh_food_price_index",
+    "COLUMN_NAME": "base_date",
+    "DATA_TYPE": "date"
+  },
+  {
+    "TABLE_NAME": "drought_impact_fresh_food_price_index",
+    "COLUMN_NAME": "total_index",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "drought_impact_fresh_food_price_index",
+    "COLUMN_NAME": "fresh_food_index",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "drought_impact_fresh_food_price_index",
+    "COLUMN_NAME": "fresh_fish_index",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "drought_impact_fresh_food_price_index",
+    "COLUMN_NAME": "fresh_vegetable_index",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "drought_impact_fresh_food_price_index",
+    "COLUMN_NAME": "fresh_fruit_index",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "drought_impact_fresh_food_price_index",
+    "COLUMN_NAME": "excluding_fresh_food_index",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "id",
+    "DATA_TYPE": "bigint"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "analdate",
+    "DATA_TYPE": "datetime"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "area",
+    "DATA_TYPE": "bigint"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "d1",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "d2",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "d3",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "d4",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "doname",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "maxi",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "meanavg",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "mini",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "regioncode",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "sigucode",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "sigun",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "std",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "COLUMN_NAME": "upplocalcd",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "impact_field",
+    "COLUMN_NAME": "code",
+    "DATA_TYPE": "char"
+  },
+  {
+    "TABLE_NAME": "impact_field",
+    "COLUMN_NAME": "name",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "id",
+    "DATA_TYPE": "bigint"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "location",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "item",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "variety",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "prediction_year",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "prediction_month",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "predicted_price_lower_bound",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "predicted_price_upper_bound",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "prev_year_avg_price",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "price_change_from_prev_year",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "price_rate_of_change",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "price_indicator_color",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "predicted_volume_lower_bound",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "predicted_volume_upper_bound",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "prev_year_avg_volume",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "volume_change_from_prev_year",
+    "DATA_TYPE": "int"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "volume_rate_of_change",
+    "DATA_TYPE": "decimal"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "volume_indicator_color",
+    "DATA_TYPE": "varchar"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "created_at",
+    "DATA_TYPE": "timestamp"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "COLUMN_NAME": "updated_at",
+    "DATA_TYPE": "timestamp"
+  }
+]

@@ -1,0 +1,34 @@
+server:
+  port: ${ADMIN_SERVER_PORT:8082}
+
+spring:
+  application:
+    name: icuh-drought-admin-api
+  profiles:
+    default: local
+  datasource:
+    url: ${ADMIN_DB_URL:jdbc:mysql://localhost:3306/ACTUAL_DRGHT?allowPublicKeyRetrieval=true&useSSL=false}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${ADMIN_DB_USERNAME}
+    password: ${ADMIN_DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: ${ADMIN_JPA_SHOW_SQL:false}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: ${ADMIN_JPA_FORMAT_SQL:false}
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  config:
+    import: optional:application-private.yml
+
+cors:
+  allowed:
+    origins: ${ADMIN_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:5173}

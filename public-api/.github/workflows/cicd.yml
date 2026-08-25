@@ -1,0 +1,99 @@
+# 1. 워크플로우 이름 지정
+name: icuh-platform CI/CD flow
+
+# 2. 워크플로우가 시작될 조건 지정
+on:
+  push:
+    branches: [ "develop" ]
+  pull_request:
+    branches: [ "develop" ]
+
+jobs:
+  build:
+
+    # 3. 가상머신의 실행 환경 지정
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v4 # 4. 작성한 코드를 가상 머신에 복사해 갖다놓는 작업 그래야만 거기서 작업을 할 수 있다.
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+
+    - name: Build with Gradle Wrapper
+      run: ./gradlew build -x test
+
+    - name: Login into Docker Hub
+      env:
+        DOCKER_HUB_REGISTRY: ${{ secrets.DOCKER_HUB_REPO }}
+        DOCKER_HUB_ID: ${{ secrets.DOCKER_HUB_ID }}
+        DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      run: echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_ID --password-stdin
+
+    - name: docker build
+      run: docker build -t ${{ secrets.DOCKER_HUB_ID }}/${{ secrets.DOCKER_HUB_REPO }}:latest .
+
+    - name: docker push
+      run: docker push ${{ secrets.DOCKER_HUB_ID }}/${{ secrets.DOCKER_HUB_REPO }}:latest
+
+    - name: Get Github Actions IP
+      id: ip
+      uses: haythem/public-ip@v1.2
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-2
+
+    - name: Add Github Actions IP to Security group
+      run: |
+        aws ec2 authorize-security-group-ingress --group-id ${{ secrets.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
+
+    - name: Test EC2 SSH Connection
+      id: test_ssh_connection
+      env:
+        SSH_KEY: ${{ secrets.SSH_EC2_KEY }}
+        SSH_USER: ${{ secrets.SSH_EC2_USER }}
+        SSH_HOST: ${{ secrets.SSH_EC2_HOST }}
+      run: |
+        echo "$SSH_KEY" > icuh-platform-key.pem
+        chmod 400 icuh-platform-key.pem
+        
+        ssh -i "icuh-platform-key.pem" -o StrictHostKeyChecking=no ${{secrets.SSH_EC2_USER}}@${{secrets.SSH_EC2_HOST}} << EOF
+        echo "hello world"
+        EOF
+
+    - name: Failed Test EC2 SSH Connection
+      if: ${{ failure() }}
+      run: aws ec2 revoke-security-group-ingress --group-id ${{ secrets.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
+
+    - name: Deploy to EC2
+      env: # Deploy 단계에서 사용할 Secret들을 env 블록으로 명시해주는 것이 더 깔끔합니다.
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+        PROD_DB_URL: ${{ secrets.PROD_DB_URL }}
+        PROD_DB_USERNAME: ${{ secrets.PROD_DB_USERNAME }}
+        PROD_DB_PASSWORD: ${{ secrets.PROD_DB_PASSWORD }}
+      run: |
+        ssh -i "icuh-platform-key.pem" -o StrictHostKeyChecking=no ${{secrets.SSH_EC2_USER}}@${{secrets.SSH_EC2_HOST}} << EOF
+          docker login -u ${{ secrets.DOCKER_HUB_ID }} -p ${{ secrets.DOCKER_HUB_PASSWORD }} --password-stdin
+          docker pull ${{ secrets.DOCKER_HUB_ID }}/${{ secrets.DOCKER_HUB_REPO }}:latest
+          docker stop icuh_platform
+          docker rm icuh_platform
+          docker run -d --name icuh_platform -p 8081:8081 -v /home/ubuntu/log/spring:/root/log/spring -e SPRING_PROFILES_ACTIVE='prod' -e SPRING_CLOUD_AWS_S3_BUCKET='${{ secrets.S3_BUCKET_NAME }}' -e SPRING_CLOUD_AWS_REGION_STATIC='ap-northeast-2' -e SPRING_CLOUD_AWS_CREDENTIALS_ACCESS-KEY='${{ secrets.AWS_ACCESS_KEY_ID }}' -e SPRING_CLOUD_AWS_CREDENTIALS_SECRET-KEY='${{ secrets.AWS_SECRET_ACCESS_KEY }}' -e SPRING_DATASOURCE_URL='${{ secrets.PROD_DB_URL }}' -e SPRING_DATASOURCE_USERNAME='${{ secrets.PROD_DB_USERNAME }}' -e SPRING_DATASOURCE_PASSWORD='${{ secrets.PROD_DB_PASSWORD }}' -e CORS_ALLOWED_ORIGINS='${{ secrets.CORS_ALLOWED_ORIGINS }}' -e SPRING_SERVLET_MULTIPART_MAX-FILE-SIZE='1GB' -e SPRING_SERVERT_MULTIPART_MAX-REQUEST-SIZE='1GB' ${{ secrets.DOCKER_HUB_ID }}/${{ secrets.DOCKER_HUB_REPO }}:latest
+        EOF
+
+    - name: Remove Github Actions IP From Security Group
+      if: ${{ always() }}
+      run: |
+        aws ec2 revoke-security-group-ingress --group-id ${{ secrets.AWS_SG_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32

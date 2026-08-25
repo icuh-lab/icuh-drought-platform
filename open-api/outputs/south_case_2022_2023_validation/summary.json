@@ -1,0 +1,29 @@
+{
+  "database": "actual_drought_validation",
+  "case_id": "CASE_SOUTH_22_23",
+  "period": "2022-01~2023-12",
+  "regions": [
+    "전남 고흥군",
+    "경남 합천군"
+  ],
+  "table_count": 17,
+  "news_bridge_rows": 25,
+  "news_distinct_articles": 25,
+  "goheung_news_rows": 13,
+  "hapcheon_news_rows": 12,
+  "news_region_code_anomaly_rows": 2,
+  "jenks_grade_rows": 43,
+  "onion_actual_month_rows": 44,
+  "onion_daily_prediction_month_rows": 44,
+  "onion_monthly_prediction_rows": 44,
+  "fresh_index_rows": 48,
+  "hapcheon_hydro_rows": 24,
+  "monthly_panel_rows": 48,
+  "data_limitations": [
+    "Jenks 등급은 시군구가 아니라 SIDO/MONTH 기준으로 저장되어 전남 등급을 고흥군에, 경남 등급을 합천군에 연결했다.",
+    "농산물 DB에는 양파 가격/반입량과 예측값이 있으나 생산량·재배면적 컬럼은 확인되지 않았다.",
+    "신선물가지수는 시도 단위이며 시군구 단위 지표가 아니다.",
+    "합천댐 수력자료는 합천군 보조자료로 사용할 수 있으나 고흥군과 직접 공간 연결하지 않는다.",
+    "고흥군 뉴스 bridge 중 일부는 sigungu_code가 기대 코드(46770)와 달라 지역코드 점검필요로 표시했다."
+  ]
+}

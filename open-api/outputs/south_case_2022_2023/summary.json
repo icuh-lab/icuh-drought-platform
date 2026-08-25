@@ -1,0 +1,66 @@
+{
+  "generated_at": "2026-08-18T00:06:45.749Z",
+  "case_id": "CASE_SOUTH_22_23",
+  "period": "2022-01~2023-12",
+  "regions": [
+    "전남 고흥군",
+    "경남 합천군"
+  ],
+  "table_info": [
+    {
+      "table_name": "drought_article",
+      "rows_cnt": "22136",
+      "min_date": "1990-08-23",
+      "max_date": "2026-08-16"
+    },
+    {
+      "table_name": "drought_article_region_impact",
+      "rows_cnt": "10226",
+      "min_date": "NULL",
+      "max_date": "NULL"
+    },
+    {
+      "table_name": "agg_period_grade",
+      "rows_cnt": "8443",
+      "min_date": "1990",
+      "max_date": "2026-W33"
+    },
+    {
+      "table_name": "fresh_food_price_index",
+      "rows_cnt": "1190",
+      "min_date": "2022-01-01",
+      "max_date": "2026-07-01"
+    },
+    {
+      "table_name": "dam_monthly_generation",
+      "rows_cnt": "696",
+      "min_date": "2021-01",
+      "max_date": "2026-06"
+    }
+  ],
+  "counts": {
+    "news_articles_bridge_rows": 25,
+    "news_monthly_rows": 13,
+    "jenks_grade_rows": 40,
+    "fresh_index_rows": 48,
+    "hapcheon_hydro_rows": 24,
+    "monthly_panel_rows": 48
+  },
+  "db_limitations": {
+    "onion_rows_in_standard_market_tables": [
+      {
+        "table_name": "daily_market_trends",
+        "rows_cnt": "0"
+      },
+      {
+        "table_name": "daily_price_predictions",
+        "rows_cnt": "0"
+      },
+      {
+        "table_name": "monthly_market_predictions",
+        "rows_cnt": "0"
+      }
+    ],
+    "note": "RDS 표준 가격 테이블(daily_market_trends/daily_price_predictions/monthly_market_predictions)에서 양파 행은 0건으로 확인됨."
+  }
+}

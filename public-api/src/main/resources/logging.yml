@@ -1,0 +1,1 @@
+logging.config: ${PUBLIC_LOGGING_CONFIG:classpath:logback/logback-local.xml}

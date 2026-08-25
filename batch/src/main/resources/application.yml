@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: icuh-drought-batch
+  main:
+    web-application-type: none
+  profiles:
+    default: local

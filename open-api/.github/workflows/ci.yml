@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      # 테스트는 H2 인메모리로 동작하므로 외부 DB/시크릿 불필요.
+      # 테스트가 하나라도 실패하면 이 잡이 실패 -> CD 워크플로우가 트리거되지 않는다.
+      - name: Test
+        run: ./gradlew test
+
+      - name: Build
+        run: ./gradlew build -x test
+
+      # 테스트 결과를 PR/실행 요약에서 바로 확인할 수 있게 업로드(실패해도 항상).
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: build/reports/tests/test

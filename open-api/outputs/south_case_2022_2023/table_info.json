@@ -1,0 +1,32 @@
+[
+  {
+    "table_name": "drought_article",
+    "rows_cnt": "22136",
+    "min_date": "1990-08-23",
+    "max_date": "2026-08-16"
+  },
+  {
+    "table_name": "drought_article_region_impact",
+    "rows_cnt": "10226",
+    "min_date": "NULL",
+    "max_date": "NULL"
+  },
+  {
+    "table_name": "agg_period_grade",
+    "rows_cnt": "8443",
+    "min_date": "1990",
+    "max_date": "2026-W33"
+  },
+  {
+    "table_name": "fresh_food_price_index",
+    "rows_cnt": "1190",
+    "min_date": "2022-01-01",
+    "max_date": "2026-07-01"
+  },
+  {
+    "table_name": "dam_monthly_generation",
+    "rows_cnt": "696",
+    "min_date": "2021-01",
+    "max_date": "2026-06"
+  }
+]

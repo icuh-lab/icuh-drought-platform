@@ -1,0 +1,16 @@
+# 테스트 전용 설정 — 외부 DB/자격증명 없이 H2 인메모리로 격리 실행한다.
+# (운영 자격증명은 main의 application.yml에서 환경변수로 주입)
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true

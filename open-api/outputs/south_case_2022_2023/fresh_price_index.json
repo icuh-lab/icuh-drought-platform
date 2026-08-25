@@ -1,0 +1,482 @@
+[
+  {
+    "ym": "2022-01",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "105.21",
+    "fresh_food_index": "112.84",
+    "fresh_vegetable_index": "109.34",
+    "fresh_fruit_index": "124.64",
+    "excluding_fresh_food_index": "104.84"
+  },
+  {
+    "ym": "2022-01",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "105.14",
+    "fresh_food_index": "109.40",
+    "fresh_vegetable_index": "106.19",
+    "fresh_fruit_index": "122.74",
+    "excluding_fresh_food_index": "104.88"
+  },
+  {
+    "ym": "2022-02",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "105.76",
+    "fresh_food_index": "111.34",
+    "fresh_vegetable_index": "110.59",
+    "fresh_fruit_index": "119.27",
+    "excluding_fresh_food_index": "105.49"
+  },
+  {
+    "ym": "2022-02",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "105.74",
+    "fresh_food_index": "109.54",
+    "fresh_vegetable_index": "109.87",
+    "fresh_fruit_index": "119.10",
+    "excluding_fresh_food_index": "105.52"
+  },
+  {
+    "ym": "2022-03",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "106.49",
+    "fresh_food_index": "109.46",
+    "fresh_vegetable_index": "104.72",
+    "fresh_fruit_index": "120.48",
+    "excluding_fresh_food_index": "106.33"
+  },
+  {
+    "ym": "2022-03",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "106.67",
+    "fresh_food_index": "105.39",
+    "fresh_vegetable_index": "102.26",
+    "fresh_fruit_index": "115.56",
+    "excluding_fresh_food_index": "106.74"
+  },
+  {
+    "ym": "2022-04",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "107.21",
+    "fresh_food_index": "109.49",
+    "fresh_vegetable_index": "101.96",
+    "fresh_fruit_index": "122.68",
+    "excluding_fresh_food_index": "107.07"
+  },
+  {
+    "ym": "2022-04",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "107.62",
+    "fresh_food_index": "106.61",
+    "fresh_vegetable_index": "102.25",
+    "fresh_fruit_index": "118.10",
+    "excluding_fresh_food_index": "107.68"
+  },
+  {
+    "ym": "2022-05",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "107.85",
+    "fresh_food_index": "107.54",
+    "fresh_vegetable_index": "96.49",
+    "fresh_fruit_index": "121.11",
+    "excluding_fresh_food_index": "107.84"
+  },
+  {
+    "ym": "2022-05",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "108.44",
+    "fresh_food_index": "105.50",
+    "fresh_vegetable_index": "98.86",
+    "fresh_fruit_index": "117.20",
+    "excluding_fresh_food_index": "108.61"
+  },
+  {
+    "ym": "2022-06",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "108.58",
+    "fresh_food_index": "107.00",
+    "fresh_vegetable_index": "95.36",
+    "fresh_fruit_index": "120.80",
+    "excluding_fresh_food_index": "108.63"
+  },
+  {
+    "ym": "2022-06",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "109.31",
+    "fresh_food_index": "103.88",
+    "fresh_vegetable_index": "95.79",
+    "fresh_fruit_index": "114.29",
+    "excluding_fresh_food_index": "109.63"
+  },
+  {
+    "ym": "2022-07",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "109.04",
+    "fresh_food_index": "112.86",
+    "fresh_vegetable_index": "113.17",
+    "fresh_fruit_index": "120.71",
+    "excluding_fresh_food_index": "108.84"
+  },
+  {
+    "ym": "2022-07",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "109.71",
+    "fresh_food_index": "108.49",
+    "fresh_vegetable_index": "109.36",
+    "fresh_fruit_index": "115.24",
+    "excluding_fresh_food_index": "109.78"
+  },
+  {
+    "ym": "2022-08",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "108.78",
+    "fresh_food_index": "117.93",
+    "fresh_vegetable_index": "124.87",
+    "fresh_fruit_index": "124.34",
+    "excluding_fresh_food_index": "108.34"
+  },
+  {
+    "ym": "2022-08",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "109.51",
+    "fresh_food_index": "114.30",
+    "fresh_vegetable_index": "124.14",
+    "fresh_fruit_index": "118.08",
+    "excluding_fresh_food_index": "109.22"
+  },
+  {
+    "ym": "2022-09",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "108.96",
+    "fresh_food_index": "120.50",
+    "fresh_vegetable_index": "138.70",
+    "fresh_fruit_index": "116.85",
+    "excluding_fresh_food_index": "108.41"
+  },
+  {
+    "ym": "2022-09",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "109.72",
+    "fresh_food_index": "118.58",
+    "fresh_vegetable_index": "139.34",
+    "fresh_fruit_index": "113.02",
+    "excluding_fresh_food_index": "109.19"
+  },
+  {
+    "ym": "2022-10",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "109.31",
+    "fresh_food_index": "113.61",
+    "fresh_vegetable_index": "120.89",
+    "fresh_fruit_index": "112.55",
+    "excluding_fresh_food_index": "109.10"
+  },
+  {
+    "ym": "2022-10",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "109.93",
+    "fresh_food_index": "112.02",
+    "fresh_vegetable_index": "122.31",
+    "fresh_fruit_index": "109.70",
+    "excluding_fresh_food_index": "109.81"
+  },
+  {
+    "ym": "2022-11",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "109.23",
+    "fresh_food_index": "106.17",
+    "fresh_vegetable_index": "103.84",
+    "fresh_fruit_index": "105.87",
+    "excluding_fresh_food_index": "109.34"
+  },
+  {
+    "ym": "2022-11",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "109.69",
+    "fresh_food_index": "104.24",
+    "fresh_vegetable_index": "103.01",
+    "fresh_fruit_index": "103.09",
+    "excluding_fresh_food_index": "110.01"
+  },
+  {
+    "ym": "2022-12",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "109.38",
+    "fresh_food_index": "108.11",
+    "fresh_vegetable_index": "97.64",
+    "fresh_fruit_index": "117.63",
+    "excluding_fresh_food_index": "109.41"
+  },
+  {
+    "ym": "2022-12",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "109.71",
+    "fresh_food_index": "104.06",
+    "fresh_vegetable_index": "95.32",
+    "fresh_fruit_index": "108.83",
+    "excluding_fresh_food_index": "110.06"
+  },
+  {
+    "ym": "2023-01",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "110.13",
+    "fresh_food_index": "113.91",
+    "fresh_vegetable_index": "112.81",
+    "fresh_fruit_index": "118.81",
+    "excluding_fresh_food_index": "109.94"
+  },
+  {
+    "ym": "2023-01",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "110.58",
+    "fresh_food_index": "110.91",
+    "fresh_vegetable_index": "108.60",
+    "fresh_fruit_index": "114.99",
+    "excluding_fresh_food_index": "110.57"
+  },
+  {
+    "ym": "2023-02",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "110.50",
+    "fresh_food_index": "115.59",
+    "fresh_vegetable_index": "119.58",
+    "fresh_fruit_index": "115.32",
+    "excluding_fresh_food_index": "110.25"
+  },
+  {
+    "ym": "2023-02",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "110.66",
+    "fresh_food_index": "111.88",
+    "fresh_vegetable_index": "114.52",
+    "fresh_fruit_index": "111.61",
+    "excluding_fresh_food_index": "110.59"
+  },
+  {
+    "ym": "2023-03",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "110.52",
+    "fresh_food_index": "116.40",
+    "fresh_vegetable_index": "118.75",
+    "fresh_fruit_index": "118.05",
+    "excluding_fresh_food_index": "110.23"
+  },
+  {
+    "ym": "2023-03",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "110.96",
+    "fresh_food_index": "115.40",
+    "fresh_vegetable_index": "116.67",
+    "fresh_fruit_index": "119.54",
+    "excluding_fresh_food_index": "110.70"
+  },
+  {
+    "ym": "2023-04",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "110.75",
+    "fresh_food_index": "112.81",
+    "fresh_vegetable_index": "108.72",
+    "fresh_fruit_index": "119.25",
+    "excluding_fresh_food_index": "110.63"
+  },
+  {
+    "ym": "2023-04",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "111.40",
+    "fresh_food_index": "114.21",
+    "fresh_vegetable_index": "112.66",
+    "fresh_fruit_index": "119.71",
+    "excluding_fresh_food_index": "111.25"
+  },
+  {
+    "ym": "2023-05",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "111.20",
+    "fresh_food_index": "111.85",
+    "fresh_vegetable_index": "105.41",
+    "fresh_fruit_index": "119.61",
+    "excluding_fresh_food_index": "111.15"
+  },
+  {
+    "ym": "2023-05",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "111.78",
+    "fresh_food_index": "112.84",
+    "fresh_vegetable_index": "108.23",
+    "fresh_fruit_index": "117.69",
+    "excluding_fresh_food_index": "111.71"
+  },
+  {
+    "ym": "2023-06",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "111.34",
+    "fresh_food_index": "111.28",
+    "fresh_vegetable_index": "100.94",
+    "fresh_fruit_index": "122.64",
+    "excluding_fresh_food_index": "111.32"
+  },
+  {
+    "ym": "2023-06",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "111.69",
+    "fresh_food_index": "111.36",
+    "fresh_vegetable_index": "102.05",
+    "fresh_fruit_index": "117.60",
+    "excluding_fresh_food_index": "111.71"
+  },
+  {
+    "ym": "2023-07",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "111.45",
+    "fresh_food_index": "116.84",
+    "fresh_vegetable_index": "107.23",
+    "fresh_fruit_index": "133.60",
+    "excluding_fresh_food_index": "111.18"
+  },
+  {
+    "ym": "2023-07",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "111.70",
+    "fresh_food_index": "114.57",
+    "fresh_vegetable_index": "106.46",
+    "fresh_fruit_index": "124.87",
+    "excluding_fresh_food_index": "111.52"
+  },
+  {
+    "ym": "2023-08",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "112.41",
+    "fresh_food_index": "127.51",
+    "fresh_vegetable_index": "127.88",
+    "fresh_fruit_index": "144.26",
+    "excluding_fresh_food_index": "111.71"
+  },
+  {
+    "ym": "2023-08",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "112.91",
+    "fresh_food_index": "124.63",
+    "fresh_vegetable_index": "126.00",
+    "fresh_fruit_index": "134.53",
+    "excluding_fresh_food_index": "112.21"
+  },
+  {
+    "ym": "2023-09",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "113.22",
+    "fresh_food_index": "132.75",
+    "fresh_vegetable_index": "135.77",
+    "fresh_fruit_index": "153.05",
+    "excluding_fresh_food_index": "112.32"
+  },
+  {
+    "ym": "2023-09",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "113.73",
+    "fresh_food_index": "128.41",
+    "fresh_vegetable_index": "132.67",
+    "fresh_fruit_index": "141.44",
+    "excluding_fresh_food_index": "112.86"
+  },
+  {
+    "ym": "2023-10",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "113.66",
+    "fresh_food_index": "131.41",
+    "fresh_vegetable_index": "134.56",
+    "fresh_fruit_index": "148.35",
+    "excluding_fresh_food_index": "112.84"
+  },
+  {
+    "ym": "2023-10",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "114.19",
+    "fresh_food_index": "128.73",
+    "fresh_vegetable_index": "128.98",
+    "fresh_fruit_index": "147.15",
+    "excluding_fresh_food_index": "113.33"
+  },
+  {
+    "ym": "2023-11",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "112.98",
+    "fresh_food_index": "121.15",
+    "fresh_vegetable_index": "118.08",
+    "fresh_fruit_index": "134.68",
+    "excluding_fresh_food_index": "112.59"
+  },
+  {
+    "ym": "2023-11",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "113.50",
+    "fresh_food_index": "118.60",
+    "fresh_vegetable_index": "112.44",
+    "fresh_fruit_index": "132.75",
+    "excluding_fresh_food_index": "113.20"
+  },
+  {
+    "ym": "2023-12",
+    "region": "경남 합천군",
+    "province": "경상남도",
+    "total_index": "112.94",
+    "fresh_food_index": "124.12",
+    "fresh_vegetable_index": "113.55",
+    "fresh_fruit_index": "148.17",
+    "excluding_fresh_food_index": "112.41"
+  },
+  {
+    "ym": "2023-12",
+    "region": "전남 고흥군",
+    "province": "전라남도",
+    "total_index": "113.38",
+    "fresh_food_index": "119.29",
+    "fresh_vegetable_index": "107.27",
+    "fresh_fruit_index": "139.69",
+    "excluding_fresh_food_index": "113.03"
+  }
+]

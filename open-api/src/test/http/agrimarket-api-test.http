@@ -1,0 +1,19 @@
+## 농산물 도매가격 예측 API
+
+## 데이터 기간: 2022.07 ~ 2024.10 (7월 8월 9월 10월만 제공)
+## 지역명: 강릉, 대관령 (현재는 강릉만)
+## 연, 월: year값은 YYYY 형태이고, month는 한자릿수의 해당하는 월인 경우 M, 두자릿수인경우 MM
+### [GET] 월간 시장 가격 및 반입량 예측 정보
+GET http://localhost:8080/api/v1/agrimarket/market-price?year=2024&month=7&location=강릉
+
+## 데이터 기간: 2022.07 ~ 2024.10 (7월 8월 9월 10월만 제공)
+## 지역명: 강릉, 대관령 (현재는 강릉만)
+## 연, 월: year값은 YYYY 형태이고, month는 한자릿수의 해당하는 월인 경우 M, 두자릿수인경우 MM
+### [GET] 일자별 가격 예측 정보 (캘린더 데이터)
+GET http://localhost:8080/api/v1/agrimarket/daily-price?year=2024&month=7&location=강릉
+
+## 데이터 기간: 2022.07 ~ 2024.10 (7월 8월 9월 10월만 제공)
+## 지역명: 강릉, 대관령 (현재는 강릉만)
+## 연, 월: year값은 YYYY 형태이고, month는 한자릿수의 해당하는 월인 경우 M, 두자릿수인경우 MM
+### [GET] 일간 시장 반입량 및 가격 트렌드
+GET http://localhost:8080/api/v1/agrimarket/daily-market?year=2023&month=09&location=강릉

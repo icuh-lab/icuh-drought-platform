@@ -1,0 +1,13 @@
+# 운영 프로파일 — SQL 로그 비노출, 보수적 로깅, 커넥션 풀 튜닝
+spring:
+  jpa:
+    show-sql: false
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+logging:
+  level:
+    root: warn
+    re.kr.icuh.drought.openapi: info

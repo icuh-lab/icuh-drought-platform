@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/favicon.ico">
+    <title>InfraDNA Platform Admin</title>
+    <script src="/js/article-create-detail.js" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+<div class="flex min-h-screen bg-gray-100">
+    <aside class="w-[250px] bg-gray-800 text-white p-6 fixed h-full">
+        <div class="mb-8">
+            <h1 class="text-xl font-bold">ICUH - 빅데이터 플랫폼</h1>
+            <p class="text-sm text-gray-400">관리자 페이지</p>
+        </div>
+        
+        <nav>
+            <div class="mb-6">
+                <p class="text-gray-400 text-sm mb-2">게시글 관리</p>
+                <ul class="space-y-2">
+                    <li>
+                        <a href="/article/create-list" class="pl-4 py-1 bg-gray-700 rounded flex items-center hover:bg-gray-600">
+                            <i class="icon-users mr-2"></i> 등록 요청 처리
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/article/update-list" class="pl-4 py-1 hover:bg-gray-700 rounded flex items-center hover:bg-gray-600">
+                            <i class="icon-cog mr-2"></i> 수정 요청 처리
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/article/delete-list" class="pl-4 py-1 hover:bg-gray-700 rounded flex items-center hover:bg-gray-600">
+                            <i class="icon-cog mr-2"></i> 삭제 요청 처리
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </aside>
+    
+    <main class="ml-[250px] flex-1 p-8">
+        <header class="mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">게시글 상세보기</h1>
+            </div>
+            
+            <nav class="flex mb-6" aria-label="Breadcrumb">
+                <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                    <li>
+                        <a href="/article/create-list" class="hover:text-blue-600">게시글 관리</a>
+                    </li>
+                    <li class="flex items-center">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                        <span id="breadcrumbStatus">게시글 상세</span>
+                    </li>
+                </ol>
+            </nav>
+        </header>
+        
+        <div class="bg-white p-6 rounded-lg shadow-sm mb-6" id="articleDetail">
+            <!-- 게시글 상세 정보 로딩 중 -->
+            <div class="flex justify-center items-center py-8" id="loadingIndicator">
+                <svg class="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="ml-2 text-gray-600">게시글 정보를 불러오는 중입니다...</span>
+            </div>
+            
+            <!-- 게시글 상세 정보 (JavaScript로 채워짐) -->
+            <div id="articleContent" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="articleTitle" class="text-xl font-bold"></h2>
+                    <span id="articleStatus" class="px-3 py-1 text-xs font-semibold rounded-full"></span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-x-6 gap-y-4 mb-8">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500 mb-1">작성자</h3>
+                        <p id="articleAuthor" class="text-gray-800"></p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500 mb-1">작성일</h3>
+                        <p id="articleDate" class="text-gray-800"></p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500 mb-1">소속기관</h3>
+                        <p id="articleOrganization" class="text-gray-800"></p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500 mb-1">부서</h3>
+                        <p id="articleDepartment" class="text-gray-800"></p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500 mb-1">문서 유형</h3>
+                        <p id="articleDocumentType" class="text-gray-800"></p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500 mb-1">주제 분야</h3>
+                        <p id="articleSubjectDomain" class="text-gray-800"></p>
+                    </div>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-sm font-medium text-gray-500 mb-2">요약</h3>
+                    <div id="articleSummary" class="bg-gray-50 p-4 rounded text-gray-800"></div>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-sm font-medium text-gray-500 mb-2">본문</h3>
+                    <div id="articleContentText" class="bg-gray-50 p-4 rounded text-gray-800"></div>
+                </div>
+                
+                <div class="mb-8" id="attachmentSection">
+                    <h3 class="text-sm font-medium text-gray-500 mb-2">첨부파일</h3>
+                    <ul id="attachmentList" class="bg-gray-50 p-4 rounded">
+                        <!-- 첨부파일 목록은 JavaScript로 채워짐 -->
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- 오류 메시지 -->
+            <div id="errorMessage" class="hidden text-center py-8 text-red-500">
+                게시글 정보를 불러오는 중 오류가 발생했습니다. 나중에 다시 시도해주세요.
+            </div>
+        </div>
+        
+        <!-- 버튼 영역 (등록 대기 중인 경우에만 표시) -->
+        <div id="actionButtons" class="flex justify-end space-x-4 mt-6 hidden">
+            <button id="approveButton" class="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 font-medium">
+                승인하기
+            </button>
+            <button id="rejectButton" class="px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600 font-medium">
+                반려하기
+            </button>
+        </div>
+        
+        <!-- 목록으로 돌아가기 버튼 -->
+        <div class="flex justify-center mt-8">
+            <button id="backButton" class="px-6 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                목록으로 돌아가기
+            </button>
+        </div>
+    </main>
+</div>
+
+<!-- 반려 사유 모달 -->
+<div id="rejectModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 class="text-lg font-semibold mb-4">반려 사유</h3>
+        <textarea id="rejectReason" class="w-full border border-gray-300 rounded p-2 mb-4 h-32" placeholder="반려 사유를 입력해주세요."></textarea>
+        <div class="flex justify-end space-x-2">
+            <button id="cancelReject" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                취소
+            </button>
+            <button id="confirmReject" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+                반려 확인
+            </button>
+        </div>
+    </div>
+</div>
+</body>
+</html>

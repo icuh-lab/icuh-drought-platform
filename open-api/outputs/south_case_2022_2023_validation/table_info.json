@@ -1,0 +1,70 @@
+[
+  {
+    "TABLE_NAME": "agg_daily_count",
+    "TABLE_ROWS": "184"
+  },
+  {
+    "TABLE_NAME": "agg_daily_region_field_count",
+    "TABLE_ROWS": "466"
+  },
+  {
+    "TABLE_NAME": "agg_period_grade",
+    "TABLE_ROWS": "1269"
+  },
+  {
+    "TABLE_NAME": "agg_period_grade_break",
+    "TABLE_ROWS": "734"
+  },
+  {
+    "TABLE_NAME": "daily_market_trends",
+    "TABLE_ROWS": "4131"
+  },
+  {
+    "TABLE_NAME": "daily_price_predictions",
+    "TABLE_ROWS": "3906"
+  },
+  {
+    "TABLE_NAME": "dam_daily_generation",
+    "TABLE_ROWS": "6563"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_comparison",
+    "TABLE_ROWS": "216"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_generation",
+    "TABLE_ROWS": "216"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_predictions",
+    "TABLE_ROWS": "204"
+  },
+  {
+    "TABLE_NAME": "dam_monthly_reservoir_status",
+    "TABLE_ROWS": "216"
+  },
+  {
+    "TABLE_NAME": "drought_article",
+    "TABLE_ROWS": "1232"
+  },
+  {
+    "TABLE_NAME": "drought_article_region_impact",
+    "TABLE_ROWS": "904"
+  },
+  {
+    "TABLE_NAME": "drought_impact_fresh_food_price_index",
+    "TABLE_ROWS": "1171"
+  },
+  {
+    "TABLE_NAME": "drought_impact_wildfire_risk_index",
+    "TABLE_ROWS": "1220511"
+  },
+  {
+    "TABLE_NAME": "impact_field",
+    "TABLE_ROWS": "8"
+  },
+  {
+    "TABLE_NAME": "monthly_market_predictions",
+    "TABLE_ROWS": "162"
+  }
+]

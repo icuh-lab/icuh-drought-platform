@@ -1,0 +1,16 @@
+server:
+  port: ${PUBLIC_SERVER_PORT:8081}
+
+spring:
+  application:
+    name: icuh-drought-public-api
+  profiles:
+    default: local
+  config:
+    import:
+      - optional:logging.yml
+      - optional:application-secret.yml
+
+
+
+

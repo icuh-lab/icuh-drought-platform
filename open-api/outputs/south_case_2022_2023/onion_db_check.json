@@ -1,0 +1,14 @@
+[
+  {
+    "table_name": "daily_market_trends",
+    "rows_cnt": "0"
+  },
+  {
+    "table_name": "daily_price_predictions",
+    "rows_cnt": "0"
+  },
+  {
+    "table_name": "monthly_market_predictions",
+    "rows_cnt": "0"
+  }
+]

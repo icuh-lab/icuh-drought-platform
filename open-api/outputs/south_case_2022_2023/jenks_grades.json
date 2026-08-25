@@ -1,0 +1,322 @@
+[
+  {
+    "ym": "2022-03",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A2",
+    "impact_name": "농업",
+    "grade": "주의"
+  },
+  {
+    "ym": "2022-03",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A6",
+    "impact_name": "환경",
+    "grade": "주의"
+  },
+  {
+    "ym": "2022-03",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A8",
+    "impact_name": "기타",
+    "grade": "주의"
+  },
+  {
+    "ym": "2022-03",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A1",
+    "impact_name": "물 공급",
+    "grade": "관심"
+  },
+  {
+    "ym": "2022-03",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A2",
+    "impact_name": "농업",
+    "grade": "주의"
+  },
+  {
+    "ym": "2022-03",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A5",
+    "impact_name": "산업",
+    "grade": "관심"
+  },
+  {
+    "ym": "2022-03",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A8",
+    "impact_name": "기타",
+    "grade": "주의"
+  },
+  {
+    "ym": "2022-05",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A2",
+    "impact_name": "농업",
+    "grade": "경고"
+  },
+  {
+    "ym": "2022-05",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A8",
+    "impact_name": "기타",
+    "grade": "주의"
+  },
+  {
+    "ym": "2022-05",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A1",
+    "impact_name": "물 공급",
+    "grade": "주의"
+  },
+  {
+    "ym": "2022-05",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A2",
+    "impact_name": "농업",
+    "grade": "경고"
+  },
+  {
+    "ym": "2022-06",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A2",
+    "impact_name": "농업",
+    "grade": "경고"
+  },
+  {
+    "ym": "2022-06",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A5",
+    "impact_name": "산업",
+    "grade": "관심"
+  },
+  {
+    "ym": "2022-07",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A1",
+    "impact_name": "물 공급",
+    "grade": "관심"
+  },
+  {
+    "ym": "2022-07",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A2",
+    "impact_name": "농업",
+    "grade": "주의"
+  },
+  {
+    "ym": "2022-07",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A1",
+    "impact_name": "물 공급",
+    "grade": "관심"
+  },
+  {
+    "ym": "2022-07",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A2",
+    "impact_name": "농업",
+    "grade": "주의"
+  },
+  {
+    "ym": "2022-07",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A5",
+    "impact_name": "산업",
+    "grade": "주의"
+  },
+  {
+    "ym": "2022-07",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A8",
+    "impact_name": "기타",
+    "grade": "주의"
+  },
+  {
+    "ym": "2022-08",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A1",
+    "impact_name": "물 공급",
+    "grade": "관심"
+  },
+  {
+    "ym": "2022-08",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A2",
+    "impact_name": "농업",
+    "grade": "관심"
+  },
+  {
+    "ym": "2022-10",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A2",
+    "impact_name": "농업",
+    "grade": "관심"
+  },
+  {
+    "ym": "2022-10",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A1",
+    "impact_name": "물 공급",
+    "grade": "관심"
+  },
+  {
+    "ym": "2022-10",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A2",
+    "impact_name": "농업",
+    "grade": "관심"
+  },
+  {
+    "ym": "2022-11",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A1",
+    "impact_name": "물 공급",
+    "grade": "주의"
+  },
+  {
+    "ym": "2022-11",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A2",
+    "impact_name": "농업",
+    "grade": "주의"
+  },
+  {
+    "ym": "2022-11",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A5",
+    "impact_name": "산업",
+    "grade": "주의"
+  },
+  {
+    "ym": "2022-11",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A1",
+    "impact_name": "물 공급",
+    "grade": "경고"
+  },
+  {
+    "ym": "2022-11",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A2",
+    "impact_name": "농업",
+    "grade": "주의"
+  },
+  {
+    "ym": "2022-12",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A2",
+    "impact_name": "농업",
+    "grade": "관심"
+  },
+  {
+    "ym": "2022-12",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A1",
+    "impact_name": "물 공급",
+    "grade": "주의"
+  },
+  {
+    "ym": "2023-01",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A1",
+    "impact_name": "물 공급",
+    "grade": "주의"
+  },
+  {
+    "ym": "2023-01",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A8",
+    "impact_name": "기타",
+    "grade": "경고"
+  },
+  {
+    "ym": "2023-01",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A1",
+    "impact_name": "물 공급",
+    "grade": "주의"
+  },
+  {
+    "ym": "2023-02",
+    "region": "경남 합천군",
+    "sido": "경남",
+    "impact_code": "A2",
+    "impact_name": "농업",
+    "grade": "주의"
+  },
+  {
+    "ym": "2023-02",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A1",
+    "impact_name": "물 공급",
+    "grade": "주의"
+  },
+  {
+    "ym": "2023-02",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A2",
+    "impact_name": "농업",
+    "grade": "주의"
+  },
+  {
+    "ym": "2023-03",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A1",
+    "impact_name": "물 공급",
+    "grade": "경고"
+  },
+  {
+    "ym": "2023-03",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A8",
+    "impact_name": "기타",
+    "grade": "경고"
+  },
+  {
+    "ym": "2023-05",
+    "region": "전남 고흥군",
+    "sido": "전남",
+    "impact_code": "A5",
+    "impact_name": "산업",
+    "grade": "관심"
+  }
+]

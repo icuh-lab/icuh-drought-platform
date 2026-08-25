@@ -1,0 +1,17 @@
+.gradle/
+build/
+out/
+
+**/build/
+**/out/
+
+.idea/
+*.iml
+
+.DS_Store
+**/.DS_Store
+
+*.log
+
+application-private.yml
+application-secret-local.yml

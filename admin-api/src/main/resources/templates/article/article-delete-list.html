@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+    <link rel="icon" href="/favicon.ico">
+	<title>InfraDNA Platform Admin</title>
+	<script src="/js/article-delete-list.js" defer></script>
+	<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+<div class="flex min-h-screen bg-gray-100">
+	<aside class="w-[250px] bg-gray-800 text-white p-6 fixed h-full">
+		<div class="mb-8">
+			<h1 class="text-xl font-bold">ICUH - 빅데이터 플랫폼</h1>
+			<p class="text-sm text-gray-400">관리자 페이지</p>
+		</div>
+		
+		<nav>
+			<div class="mb-6">
+				<p class="text-gray-400 text-sm mb-2">게시글 관리</p>
+				<ul class="space-y-2">
+					<li>
+						<a href="/article/create-list" class="pl-4 py-1 hover:bg-gray-700 rounded flex items-center hover:bg-gray-600">
+							<i class="icon-users mr-2"></i> 등록 요청 처리
+						</a>
+					</li>
+					<li>
+						<a href="/article/update-list" class="pl-4 py-1 hover:bg-gray-700 rounded flex items-center hover:bg-gray-600">
+							<i class="icon-cog mr-2"></i> 수정 요청 처리
+						</a>
+					</li>
+					<li>
+						<a href="/article/delete-list" class="pl-4 py-1 bg-gray-700 rounded flex items-center hover:bg-gray-600">
+							<i class="icon-cog mr-2"></i> 삭제 요청 처리
+						</a>
+					</li>
+				</ul>
+			</div>
+		</nav>
+	</aside>
+	
+	<main class="ml-[250px] flex-1 p-8">
+		<header class="mb-8">
+			<div class="flex justify-between items-center mb-6">
+				<h1 class="text-2xl font-bold text-gray-800">삭제 요청 처리 현황</h1>
+			</div>
+			
+			<!-- 탭 네비게이션 -->
+			<div class="flex border-b border-gray-200 mb-6">
+				<button id="pendingTab" class="px-6 py-3 border-b-2 border-blue-500 text-blue-500 font-medium">
+					삭제 완료됨
+				</button>
+			</div>
+		</header>
+		
+		
+		<div class="bg-white p-6 rounded-lg shadow-sm">
+			<div class="mb-6">
+				<div class="relative">
+					<input type="text" id="searchInput" placeholder="게시글 검색" class="w-full px-4 py-2 pl-10 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+					<i class="icon-search absolute left-3 top-2.5 h-5 w-5 text-gray-400"></i>
+				</div>
+			</div>
+			
+			<div class="overflow-x-auto">
+				<table class="w-full">
+					<thead>
+					<tr class="bg-gray-50">
+						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+							제목
+						</th>
+						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+							등록기관
+						</th>
+						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+							등록부서
+						</th>
+						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+							작성자
+						</th>
+						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+							요청상태
+						</th>
+						<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+							요청일자
+						</th>
+					</tr>
+					</thead>
+					<tbody id="productTable" class="bg-white divide-y divide-gray-200">
+					
+					</tbody>
+				</table>
+			</div>
+			
+			<div class="mt-6 flex items-center justify-between">
+				<div id="totalCount" class="text-sm text-gray-500">총 ${products.size()}개의 상품</div>
+				<div class="flex items-center space-x-2">
+					<!-- 새로운 페이지네이션 버튼 컨테이너 -->
+					<div id="paginationContainer" class="flex justify-center mt-4"></div>
+				</div>
+			</div>
+		
+		
+		</div>
+	</main>
+</div>
+</body>
+</html>
