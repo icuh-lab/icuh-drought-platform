@@ -15,7 +15,7 @@ import re.kr.icuh.drought.persistence.article.entity.DocumentType;
 import re.kr.icuh.drought.persistence.article.entity.SubjectDomain;
 import re.kr.icuh.drought.persistence.article.repository.DocumentTypeRepository;
 import re.kr.icuh.drought.persistence.article.repository.SubjectDomainRepository;
-import re.kr.icuh.drought.publicapi.file.infra.FileRepository;
+import re.kr.icuh.drought.persistence.article.repository.FileRepository;
 import re.kr.icuh.drought.common.error.BusinessException;
 import re.kr.icuh.drought.common.error.ErrorCode;
 

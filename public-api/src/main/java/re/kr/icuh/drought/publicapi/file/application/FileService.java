@@ -10,7 +10,7 @@ import re.kr.icuh.drought.domain.article.FileStatus;
 import re.kr.icuh.drought.persistence.article.entity.FileEntity;
 import re.kr.icuh.drought.publicapi.file.dto.request.CompleteUploadRequestDto;
 import re.kr.icuh.drought.publicapi.file.dto.response.CompleteUploadResponseDto;
-import re.kr.icuh.drought.publicapi.file.infra.FileRepository;
+import re.kr.icuh.drought.persistence.article.repository.FileRepository;
 import re.kr.icuh.drought.common.error.BusinessException;
 import re.kr.icuh.drought.common.error.ErrorCode;
 import re.kr.icuh.drought.publicapi.global.common.FileUtils;
