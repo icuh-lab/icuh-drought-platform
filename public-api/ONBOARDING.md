@@ -312,7 +312,6 @@ PR 대상: develop  (main 아님)
 - `@SortDefault`를 받아놓고 `ArticleRepositoryImpl`이 `orderBy(createdAt.desc())`를 하드코딩합니다. `?sort=views,desc`는 **조용히 무시됩니다.**
 - `ModifyArticleStatusRequest` / `DeleteArticleRequest`에 `@NotNull`이 없어, `password`를 생략하면 400이어야 할 것이 **NPE로 500**이 됩니다.
 - 비밀번호가 **salt 없는 단일 라운드 SHA-256**입니다. 임시 비밀번호가 짧으면 사실상 무방비입니다.
-- `Article.java`가 `org.testcontainers.shaded...Hashing`을 import합니다 — 그래서 테스트 라이브러리(`testcontainers:localstack`)가 `implementation` 스코프에 들어가 있습니다. **프로덕션 코드가 테스트 라이브러리에 의존하는 상태**입니다.
 - `FileController`가 서비스 계층을 건너뛰고 `AmazonS3Client`를 직접 호출합니다. 다른 도메인의 계층 규칙과 어긋납니다.
 - 생성 API가 `ApiResponse.created()`(201)가 아니라 `success()`(200)를 반환합니다.
 - `CategoryController` / `HealthController`는 `ApiResponse`로 감싸지 않는 **예외 케이스**입니다. 새 코드에서 이 방식을 따라하지 마세요.
