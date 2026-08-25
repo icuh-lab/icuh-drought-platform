@@ -3,6 +3,8 @@ package re.kr.icuh.drought.adminapi.core.domain;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import re.kr.icuh.drought.domain.article.ArticleStatus;
+import re.kr.icuh.drought.persistence.article.entity.Article;
+import re.kr.icuh.drought.persistence.article.entity.FileEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

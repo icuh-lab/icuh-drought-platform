@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import re.kr.icuh.drought.domain.article.ArticleStatus;
 import re.kr.icuh.drought.domain.article.FileStatus;
+import re.kr.icuh.drought.persistence.article.entity.Article;
 
 @Service
 @RequiredArgsConstructor

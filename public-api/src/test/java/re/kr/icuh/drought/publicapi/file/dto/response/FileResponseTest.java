@@ -4,7 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 import re.kr.icuh.drought.domain.article.FileStatus;
-import re.kr.icuh.drought.publicapi.file.domain.FileEntity;
+import re.kr.icuh.drought.persistence.article.entity.FileEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

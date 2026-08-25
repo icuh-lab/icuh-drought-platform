@@ -5,10 +5,13 @@ import org.springframework.transaction.annotation.Transactional;
 import re.kr.icuh.drought.adminapi.core.api.controller.v1.response.ArticleListResponse;
 import re.kr.icuh.drought.adminapi.core.api.controller.v2.response.UpdateArticleResponse;
 import re.kr.icuh.drought.domain.article.ArticleStatus;
+import re.kr.icuh.drought.domain.article.FileStatus;
 import re.kr.icuh.drought.domain.article.UpdateArticleRequest;
 import re.kr.icuh.drought.common.error.BusinessException;
 import re.kr.icuh.drought.common.error.ErrorCode;
+import re.kr.icuh.drought.persistence.article.entity.Article;
 import re.kr.icuh.drought.persistence.article.entity.DocumentType;
+import re.kr.icuh.drought.persistence.article.entity.FileEntity;
 import re.kr.icuh.drought.persistence.article.entity.SubjectDomain;
 import re.kr.icuh.drought.persistence.article.repository.DocumentTypeRepository;
 import re.kr.icuh.drought.persistence.article.repository.SubjectDomainRepository;
@@ -50,7 +53,7 @@ public class ArticleFinder {
                 .orElseThrow(() -> new IllegalArgumentException("Article not found"));
 
         savedArticle.changeStatus(ArticleStatus.REJECTED);
-        savedArticle.setRejectReason(reason);
+        savedArticle.assignRejectReason(reason);
     }
 
     @Transactional(readOnly = true)
@@ -92,7 +95,42 @@ public class ArticleFinder {
         }
 
         // PendingUpdate 컬럼의 내용을 다시 역직렬화하여 객체로 전환 후 업데이트
-        savedArticle.updateArticleV2(savedArticle.getPendingUpdate());
+        applyPendingUpdate(savedArticle, savedArticle.getPendingUpdate());
         savedArticle.initPendingUpdate();
+    }
+
+    /**
+     * 승인 대기 중이던 수정 내용을 게시글에 반영하고 승인 상태로 전이한다.
+     * 승인 시 상태를 바꾸는 것은 admin의 워크플로우 관심사이므로 공용 {@code Article} 매핑이 아니라
+     * 이 유스케이스가 로직을 갖는다.
+     */
+    private void applyPendingUpdate(Article article, UpdateArticleRequest updateArticleRequest) {
+        article.applyApprovedContent(
+                updateArticleRequest.title(),
+                updateArticleRequest.description(),
+                updateArticleRequest.author(),
+                updateArticleRequest.authorOrganization(),
+                updateArticleRequest.department(),
+                updateArticleRequest.source()
+        );
+        article.changeStatus(ArticleStatus.APPROVED);
+//        this.views = updateArticleRequest.views();
+//        this.subjectDomain = updateArticleRequest.subjectDomainId();
+//        this.documentType = updateArticleRequest.documentTypeId();
+        article.clearFiles();
+
+        updateArticleRequest.newFiles().forEach(newFileRequest -> {
+            FileEntity fileEntity = FileEntity.builder()
+                    .article(article)
+                    .originalFilename(newFileRequest.originalFileName())
+                    .storedFilename(newFileRequest.storedFileName())
+                    .filePath(newFileRequest.filePath())
+                    .extension(newFileRequest.extension())
+                    .fileSize(newFileRequest.fileSize())
+                    .build();
+
+            fileEntity.changeStatus(FileStatus.APPROVED);
+            article.addFile(fileEntity);
+        });
     }
 }

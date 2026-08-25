@@ -6,6 +6,9 @@ import org.springframework.stereotype.Repository;
 import re.kr.icuh.drought.domain.article.ArticleStatus;
 
 import java.util.List;
+import re.kr.icuh.drought.persistence.article.entity.Article;
+import re.kr.icuh.drought.persistence.article.entity.QArticle;
+import re.kr.icuh.drought.persistence.article.entity.QFileEntity;
 
 @Repository
 public class ArticleQueryRepository {

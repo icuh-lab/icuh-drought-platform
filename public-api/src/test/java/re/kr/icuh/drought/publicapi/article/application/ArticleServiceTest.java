@@ -7,7 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import re.kr.icuh.drought.domain.article.ArticleStatus;
-import re.kr.icuh.drought.publicapi.article.domain.Article;
+import re.kr.icuh.drought.persistence.article.entity.Article;
 import re.kr.icuh.drought.publicapi.article.dto.request.CreateArticleWithFilesRequest;
 import re.kr.icuh.drought.publicapi.article.dto.request.ModifyArticleStatusRequest;
 import re.kr.icuh.drought.publicapi.article.infra.ArticleRepository;

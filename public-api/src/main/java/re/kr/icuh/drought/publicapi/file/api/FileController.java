@@ -12,7 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import re.kr.icuh.drought.publicapi.file.application.FileService;
-import re.kr.icuh.drought.publicapi.file.domain.FileEntity;
+import re.kr.icuh.drought.persistence.article.entity.FileEntity;
 import re.kr.icuh.drought.publicapi.file.dto.request.CompleteUploadRequestDto;
 import re.kr.icuh.drought.publicapi.file.dto.request.InitiateUploadRequestDto;
 import re.kr.icuh.drought.publicapi.file.dto.request.PresignedUrlRequestDto;

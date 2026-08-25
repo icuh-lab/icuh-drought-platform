@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import re.kr.icuh.drought.domain.article.ArticleStatus;
 import re.kr.icuh.drought.common.error.BusinessException;
 import re.kr.icuh.drought.common.error.ErrorCode;
+import re.kr.icuh.drought.persistence.article.entity.Article;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

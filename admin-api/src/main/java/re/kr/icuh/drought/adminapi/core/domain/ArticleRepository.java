@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 import re.kr.icuh.drought.domain.article.ArticleStatus;
 
 import java.util.List;
+import re.kr.icuh.drought.persistence.article.entity.Article;
 
 @Repository
 public interface ArticleRepository extends JpaRepository<Article, Long> {
