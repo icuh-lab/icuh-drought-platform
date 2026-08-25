@@ -353,8 +353,31 @@ G1에 따라 **DDL은 건드리지 않는다.** 두 컬럼은 이미 테이블�
 이미 `re.kr.icuh.drought.persistence.article`를 포함한다. 자기 모듈 패키지
 (`re.kr.icuh.drought.publicapi` / `...adminapi`)는 **리포지토리가 아직 거기 있으므로 유지**한다.
 
+### G2를 실제로 증명하는 테스트 (이 태스크에서 추가)
+
+현재 `pending_update` JSON 컨버터가 런타임에 제대로 배선되는지를 **증명하는 테스트가 없다.**
+컨버터는 `ObjectMapper`를 생성자 주입받는 Spring 관리 `@Converter`이고, 두 앱에서는
+`spring-boot-starter-web`이 `ObjectMapper`를 자동 구성해 주지만 그 사실을 검증하는 테스트가 없다.
+
+엔티티가 `core-persistence`로 오는 이 태스크가 그 자리를 만든다.
+기존 `core-persistence/src/test/java/re/kr/icuh/drought/persistence/PersistenceSliceTest.java`
+(H2 기반 `@DataJpaTest`, `@SpringBootConfiguration static class TestApplication` 포함)에
+왕복 테스트를 추가한다:
+
+1. `UpdateArticleRequest`를 채운 `Article`을 저장한다
+2. `flush()` + `clear()`로 영속성 컨텍스트를 비운다 (1차 캐시가 아니라 DB에서 읽어야 한다)
+3. 다시 읽어 `pendingUpdate`의 모든 필드가 왕복하는지 단언한다. 중첩 `newFiles`도 포함한다
+
+**주의:** `@DataJpaTest`는 Jackson을 자동 구성하지 않는다. `ObjectMapper` 빈이 없으면
+컨버터를 생성하지 못해 컨텍스트 로딩부터 실패한다. `TestApplication`에 `@Bean ObjectMapper`를
+추가해 해결한다 — 이건 테스트 설정이지 프로덕션 변경이 아니다.
+
+이 테스트가 통과하면 G2가 "필드명이 같다"는 정적 확인을 넘어 **실제 직렬화·역직렬화 왕복**으로
+증명된다. 컨텍스트 로딩이 실패하면 그것 자체가 발견해야 할 결함이다 — 우회하지 말고 보고할 것.
+
 ### 완료 조건
 - `articles` / `files`에 대한 `@Entity`가 각 1개만 존재한다
+- `pending_update` 왕복 테스트가 통과한다 (위 항목)
   (`grep -rn '@Table(name = "articles")' --include='*.java' */src/main`이 1줄)
 - `adminapi`/`publicapi`에 `Article`/`FileEntity` 정의가 남아 있지 않다
 - `softDelete()` 정의가 0개다
