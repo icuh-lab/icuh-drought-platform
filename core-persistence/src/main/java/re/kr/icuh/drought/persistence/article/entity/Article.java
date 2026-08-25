@@ -144,7 +144,16 @@ public class Article {
         this.status = ArticleStatus.REJECTED;
     }
 
+    /**
+     * 상태를 전이한다. 허용 여부 판단은 {@link ArticleStatus#canTransitionTo(ArticleStatus)} 한 곳에만 있다.
+     *
+     * <p>현재 상태가 {@code null}인 레코드(상태 컬럼이 NULL인 과거 데이터)는 소스가 없으므로 검사하지 않는다.
+     * 지금 성공하는 요청이 이 가드 때문에 새로 실패하면 그것 자체가 HTTP 계약 변경이기 때문이다.
+     */
     public void changeStatus(ArticleStatus articleStatus) {
+        if (this.status != null && !this.status.canTransitionTo(articleStatus)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT);
+        }
         this.status = articleStatus;
     }
 
