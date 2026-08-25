@@ -114,6 +114,8 @@ public class ArticleFinder {
                 updateArticleRequest.source()
         );
         article.changeStatus(ArticleStatus.APPROVED);
+        // 아래 3줄은 예전에 이 로직이 Article 엔티티 안에 있을 때(this == article) 주석 처리된 채로
+        // 그대로 옮겨온 것이다. 지금 this는 ArticleFinder 빈이라 원래 의미로는 컴파일되지 않는다.
 //        this.views = updateArticleRequest.views();
 //        this.subjectDomain = updateArticleRequest.subjectDomainId();
 //        this.documentType = updateArticleRequest.documentTypeId();

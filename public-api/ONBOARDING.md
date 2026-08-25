@@ -74,17 +74,17 @@ XxxRepositoryImpl    ← JPAQueryFactory + BooleanBuilder로 구현
 
 | # | 파일 | 역할 |
 |---|---|---|
-| 1 | `article/domain/Article.java` | 승인 상태 전이·비밀번호 해싱/검증·소프트 삭제·수정 스테이징까지 **모든 도메인 규칙이 실제로 강제되는 유일한 곳** |
+| 1 | `core-persistence` 모듈 `persistence/article/entity/Article.java` (Task 4에서 이동) | 승인 상태 전이·비밀번호 해싱/검증·소프트 삭제·수정 스테이징까지 **모든 도메인 규칙이 실제로 강제되는 유일한 곳** |
 | 2 | `article/application/ArticleService.java` | 트랜잭션 경계를 잡고 비밀번호 게이트를 통과시킨 뒤 게시글+파일을 원자적으로 저장하는 **유스케이스 오케스트레이터** |
 | 3 | `article/infra/ArticleRepositoryImpl.java` | 동적 검색 조건을 조립하면서 승인 상태 필터를 거는 **공개 노출 경계** — 미승인 글 유출을 막는 방어선 |
 | 4 | `file/api/FileController.java` | S3 멀티파트 업로드 4단계 **프로토콜 전체**를 직접 구현 |
-| 5 | `article/dto/UpdateArticleRequestJsonConverter.java` | 수정 요청 record ↔ `pending_update` JSON 컬럼 변환. **"수정은 승인 전까지 반영하지 않는다"는 규칙을 성립시키는 장치** |
+| 5 | `core-persistence` 모듈 `persistence/article/converter/UpdateArticleRequestJsonConverter.java` (Task 3에서 이동) | 수정 요청 record ↔ `pending_update` JSON 컬럼 변환. **"수정은 승인 전까지 반영하지 않는다"는 규칙을 성립시키는 장치** |
 
-> ⚠️ 5번 파일 주의: `UpdateArticleRequest` record의 필드를 바꾸면 **DB에 이미 저장된 JSON의 역직렬화가 실패**합니다. 하위호환을 깨는 변경으로 취급하고 마이그레이션을 동반하세요.
+> ⚠️ 5번 파일 주의: `UpdateArticleRequest` record(`core-domain` 모듈 `domain/article/UpdateArticleRequest.java`, Task 3에서 이동)의 필드를 바꾸면 **DB에 이미 저장된 JSON의 역직렬화가 실패**합니다. 하위호환을 깨는 변경으로 취급하고 마이그레이션을 동반하세요.
 
 ### 꼭 알아야 할 도메인 개념
 
-**`ArticleStatus` 7개 상태로 라이프사이클 전체를 표현합니다:**
+**`ArticleStatus`(`core-domain` 모듈 `domain/article/ArticleStatus.java`, Task 3에서 이동) 7개 상태로 라이프사이클 전체를 표현합니다:**
 
 ```
 등록 → PENDING ─승인→ APPROVED ─수정요청→ UPDATED_PENDING → UPDATED_APPROVED

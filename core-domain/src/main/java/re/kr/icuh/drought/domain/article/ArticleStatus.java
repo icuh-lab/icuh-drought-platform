@@ -29,7 +29,7 @@ import java.util.Set;
  * 5  ApproveDeleteArticle                          DELETED           제약 없음        findArticle(id), 필터 없음
  * 6  ArticleFinder.updateArticleStatus             APPROVED          제약 없음        findById, 필터 없음
  * 7  ArticleFinder.rejectArticle                   REJECTED          제약 없음        findById, 필터 없음
- * 8  ArticleFinder.applyPendingUpdate              APPROVED          APPROVED        APPROVED 목록에서 진입하는 자기 전이
+ * 8  ArticleFinder.applyPendingUpdate              APPROVED          APPROVED        mergeArticle: findById + pendingUpdate != null (자기 전이)
  * 9  ApproveUpdateArticle (Article)                UPDATED_APPROVED  제약 없음        findArticle(...), 필터 없음
  * 10 ApproveUpdateArticle (ArticleEditRequest)     UPDATED_APPROVED  UPDATED_PENDING 수정 요청은 UPDATED_PENDING으로 생성된다
  * </pre>
