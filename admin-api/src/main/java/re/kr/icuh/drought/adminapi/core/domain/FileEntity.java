@@ -63,8 +63,8 @@ public class FileEntity {
         this.status = FileStatus.DELETED;
     }
 
-    public void setArticle(Article article) {
-        article = this.article;
+    public void assignArticle(Article article) {
+        this.article = article;
     }
 
     public void changeStatus(FileStatus fileStatus) {

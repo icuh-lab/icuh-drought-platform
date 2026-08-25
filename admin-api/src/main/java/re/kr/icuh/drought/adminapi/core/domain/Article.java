@@ -127,7 +127,7 @@ public class Article {
     // 파일 추가 메서드
     public void addFile(FileEntity file) {
         this.files.add(file);
-        file.setArticle(this);
+        file.assignArticle(this);
     }
 
     // 비밀번호 검증 메서드
