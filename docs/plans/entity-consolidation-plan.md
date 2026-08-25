@@ -136,10 +136,17 @@ Testcontainers 버전을 올리면 shaded 경로가 바뀌어 컴파일이 깨�
 1. **먼저 특성화 테스트(characterization test)를 작성한다.**
    현재 구현의 출력을 고정한다. 최소 3개 케이스 — ASCII, 한글(UTF-8 멀티바이트), 빈 문자열.
    기대값은 코드에서 계산하지 말고 **하드코딩된 hex 리터럴**로 적는다.
-   기대값은 셸에서 뽑아 검증할 수 있다:
-   ```
-   printf '%s' 'test1234' | shasum -a 256
-   ```
+   기대값은 아래를 **그대로** 쓴다(`printf '%s' '<입력>' | shasum -a 256`으로 검증됨):
+
+   | 입력 | 기대 hex (소문자) |
+   |---|---|
+   | `test1234` | `937e8d5fbb48bd4949536cd65b8d35c426b80d2f830c5c308e2cdec422ae2244` |
+   | `비밀번호1234` | `a0191747a9c89b6b08303dc7f1497b4d34ebd44e978045eb0d5da4c04f04705f` |
+   | `` (빈 문자열) | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+
+   한글 케이스가 핵심이다 — UTF-8 멀티바이트 인코딩이 어긋나면 여기서만 깨진다.
+   `Article`의 `sha256Encode`는 `public` 인스턴스 메서드이므로 테스트에서
+   `Article` 인스턴스를 만들어 직접 호출하면 된다.
    테스트 위치: `public-api/src/test/java/re/kr/icuh/drought/publicapi/article/domain/ArticleTest.java`
    (기존 파일에 추가), `admin-api/.../adminapi/core/domain/ArticleTest.java`(Task 1에서 만든 파일에 추가).
 2. 이 테스트가 **현재 구현에서 통과하는지 확인한다.** 통과하지 않으면 기대값이 틀린 것이다.
@@ -356,9 +363,23 @@ G1에 따라 **DDL은 건드리지 않는다.** 두 컬럼은 이미 테이블�
 - `adminapi.core.domain`: `ArticleRepository`, `ArticleQueryRepository`,
   `FileRepository`, `FileQueryRepository`, `FileEditRequestRepository`
 
+### 사전 분석 (컨트롤러가 미리 수행함 — 그대로 신뢰하지 말고 재확인할 것)
+
+| 인터페이스 | public | admin | 겹침 |
+|---|---|---|---|
+| `ArticleRepository` | `JpaRepository<Article,Long>` + `ArticleRepositoryCustom`<br>(`findApprovedArticles(ArticleRequest, Pageable)`) | `JpaRepository<Article,Long>` +<br>`findArticlesByStatusOrderByCreatedAtDesc(ArticleStatus)`<br>`findPendingUpdateArticle()` | **`JpaRepository` 기본 메서드뿐** |
+| `FileRepository` | `JpaRepository<FileEntity,Long>`<br>**추가 메서드 없음** | `JpaRepository<FileEntity,Long>`<br>**추가 메서드 없음** | **완전 동일** |
+
+따라서 예상 결론은:
+- `FileRepository` → `core-persistence`로 **통합 대상**. Task 4가 `FileEntity`를 이미 합쳤으므로
+  두 인터페이스가 문자 그대로 같아진다.
+- `ArticleRepository` → **통합하지 않는다.** 각자 자기 모듈 전용 쿼리를 갖고 있고,
+  공통분모가 `JpaRepository` 기본 메서드뿐이라 올려봐야 얻는 게 없다.
+
+이 분석이 맞는지 직접 확인하고, 다르면 리포트에 근거와 함께 적는다.
+
 ### 할 일
-1. 두 모듈의 `ArticleRepository` / `FileRepository`가 선언한 메서드를 비교한다.
-   **완전히 겹치는 기본 CRUD만** `core-persistence`의
+1. 위 분석을 재확인한다. **완전히 겹치는 것만** `core-persistence`의
    `re.kr.icuh.drought.persistence.article.repository`로 올린다.
 2. 한쪽만 쓰는 조회 메서드는 **옮기지 않는다.** 그 모듈에 남긴다.
 3. QueryDSL 구현체(`ArticleRepositoryImpl`, `ArticleQueryRepository`, `FileQueryRepository`)는
