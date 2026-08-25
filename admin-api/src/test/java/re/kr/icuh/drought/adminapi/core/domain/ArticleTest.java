@@ -2,6 +2,7 @@ package re.kr.icuh.drought.adminapi.core.domain;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import re.kr.icuh.drought.domain.article.ArticleStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

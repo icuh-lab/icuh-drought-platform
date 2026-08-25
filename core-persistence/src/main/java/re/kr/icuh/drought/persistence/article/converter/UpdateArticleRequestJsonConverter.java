@@ -1,14 +1,14 @@
-package re.kr.icuh.drought.adminapi.core.api.controller.v2;
+package re.kr.icuh.drought.persistence.article.converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
-import re.kr.icuh.drought.adminapi.core.api.controller.v2.request.UpdateArticleRequest;
+import re.kr.icuh.drought.domain.article.UpdateArticleRequest;
 
 @Converter
-public class UpdateArticleRequestJsonConverter<T> implements AttributeConverter<UpdateArticleRequest, String> {
+public class UpdateArticleRequestJsonConverter implements AttributeConverter<UpdateArticleRequest, String> {
 
     private final ObjectMapper objectMapper;
 

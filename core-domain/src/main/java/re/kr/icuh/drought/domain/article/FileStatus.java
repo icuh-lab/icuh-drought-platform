@@ -1,4 +1,4 @@
-package re.kr.icuh.drought.adminapi.core.domain;
+package re.kr.icuh.drought.domain.article;
 
 public enum FileStatus {
     PENDING,

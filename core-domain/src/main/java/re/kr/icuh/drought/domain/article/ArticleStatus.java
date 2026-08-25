@@ -1,4 +1,4 @@
-package re.kr.icuh.drought.publicapi.article.domain;
+package re.kr.icuh.drought.domain.article;
 
 public enum ArticleStatus {
     PENDING,

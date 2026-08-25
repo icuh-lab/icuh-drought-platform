@@ -8,6 +8,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.SortDefault;
 import org.springframework.web.bind.annotation.*;
+import re.kr.icuh.drought.domain.article.UpdateArticleRequest;
 import re.kr.icuh.drought.publicapi.article.application.ArticleService;
 import re.kr.icuh.drought.publicapi.article.dto.request.*;
 import re.kr.icuh.drought.publicapi.article.dto.response.ArticleDetailResponse;

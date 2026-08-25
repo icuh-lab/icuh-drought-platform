@@ -6,6 +6,7 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     implementation project(':common')
+    implementation project(':core-domain')
     implementation project(':core-persistence')
 
     implementation 'org.springframework.boot:spring-boot-starter-web'

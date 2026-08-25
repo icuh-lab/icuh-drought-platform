@@ -3,6 +3,7 @@ package re.kr.icuh.drought.adminapi.core.domain;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import re.kr.icuh.drought.domain.article.ArticleStatus;
 
 import java.util.List;
 

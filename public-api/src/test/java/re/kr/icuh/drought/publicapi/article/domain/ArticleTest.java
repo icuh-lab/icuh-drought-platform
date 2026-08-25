@@ -2,6 +2,7 @@ package re.kr.icuh.drought.publicapi.article.domain;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import re.kr.icuh.drought.domain.article.ArticleStatus;
 import re.kr.icuh.drought.common.error.BusinessException;
 import re.kr.icuh.drought.common.error.ErrorCode;
 

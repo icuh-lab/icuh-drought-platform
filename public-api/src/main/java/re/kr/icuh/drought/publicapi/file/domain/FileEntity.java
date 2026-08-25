@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import re.kr.icuh.drought.domain.article.FileStatus;
 import re.kr.icuh.drought.publicapi.article.domain.Article;
 
 import java.time.LocalDateTime;

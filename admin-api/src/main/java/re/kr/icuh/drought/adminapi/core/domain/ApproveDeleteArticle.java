@@ -3,6 +3,8 @@ package re.kr.icuh.drought.adminapi.core.domain;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import re.kr.icuh.drought.domain.article.ArticleStatus;
+import re.kr.icuh.drought.domain.article.FileStatus;
 
 @Service
 @RequiredArgsConstructor

@@ -1,4 +1,4 @@
-package re.kr.icuh.drought.adminapi.core.api.controller.v2.request;
+package re.kr.icuh.drought.domain.article;
 
 import jakarta.validation.constraints.NotNull;
 

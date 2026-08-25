@@ -3,6 +3,7 @@ package re.kr.icuh.drought.adminapi.core.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import re.kr.icuh.drought.domain.article.ArticleStatus;
 import re.kr.icuh.drought.common.crypto.Sha256;
 import re.kr.icuh.drought.persistence.article.entity.DocumentType;
 import re.kr.icuh.drought.persistence.article.entity.SubjectDomain;
