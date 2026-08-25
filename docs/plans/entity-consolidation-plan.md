@@ -435,51 +435,74 @@ G1에 따라 **DDL은 건드리지 않는다.** 두 컬럼은 이미 테이블�
 ## Task 6: 상태 전이 규칙 단일화
 
 ### 목표
-`ArticleStatus` 전이 규칙을 `core-domain` 한 곳에 모아, 두 앱 어느 쪽에서도
-불법 전이가 일어나지 않게 한다.
+`ArticleStatus` 전이 규칙을 `core-domain` 한 곳에 모아, 두 앱에 흩어진 상태 지식을 단일 출처로 만든다.
 
-### 현재 흩어진 규칙
-- `publicapi` `Article.reject()`: `PENDING`이 아니면 `BusinessException(INVALID_INPUT)` — **유일하게 검사하는 지점**
-- `adminapi` `ApproveCreateArticle`: 무조건 `APPROVED`로 변경 (검사 없음)
-- `adminapi` `ApproveDeleteArticle`: 무조건 `DELETED`로 변경 (검사 없음)
-- `adminapi` `ApproveUpdateArticle`: 무조건 `UPDATED_APPROVED`로 변경 (검사 없음)
-- `adminapi` `ArticleFinder:43,51`: 무조건 `APPROVED` / `REJECTED`
+### 컨트롤러가 Task 4 완료 시점 코드에서 직접 도출한 사실
+
+**상태를 쓰는 지점과 그 소스 상태:**
+
+| # | 쓰는 지점 | 목표 상태 | 소스 상태 | 소스가 좁혀지는 근거 |
+|---|---|---|---|---|
+| 1 | `publicapi` `ArticleService:95` (생성) | `PENDING` | — (신규) | 빌더 기본값 |
+| 2 | `Article.delete()` | `DELETED_PENDING` | **제약 없음** | `findById`, 상태 필터 없음 |
+| 3 | `Article.reject()` | `REJECTED` | `PENDING` **만** | 메서드 안에 명시적 가드 |
+| 4 | `ApproveCreateArticle:19` | `APPROVED` | **제약 없음** | `findArticle(id)`, 필터 없음 |
+| 5 | `ApproveDeleteArticle:19` | `DELETED` | **제약 없음** | `findArticle(id)`, 필터 없음 |
+| 6 | `ArticleFinder.updateArticleStatus:47` | `APPROVED` | **제약 없음** | `findById`, 필터 없음 |
+| 7 | `ArticleFinder.rejectArticle:55` | `REJECTED` | **제약 없음** | `findById`, 필터 없음 |
+| 8 | `ArticleFinder.applyPendingUpdate:116` | `APPROVED` | `APPROVED` | `findPendingUpdateArticle()`가 `status='APPROVED' AND pendingUpdate IS NOT NULL` |
+| 9 | `ApproveUpdateArticle:41` (Article) | `UPDATED_APPROVED` | **제약 없음** | `findArticle(...)`, 필터 없음 |
+| 10 | `ApproveUpdateArticle:24` (ArticleEditRequest) | `UPDATED_APPROVED` | `UPDATED_PENDING` | 조회 쿼리가 `articleEditRequest.status.eq(UPDATED_PENDING)` |
+
+**이 표가 뒤집는 것:** 이 계획의 초안은 "`UPDATED_APPROVED → APPROVED`"를 8번 경로로 적었으나,
+실제로는 **`APPROVED → APPROVED` 자기 전이**다. 초안을 신뢰하지 말고 위 표를 쓸 것.
+
+**핵심 발견:** 상태를 바꾸는 10개 경로 중 소스 상태가 실제로 좁혀지는 것은 3·8·10번뿐이다.
+나머지는 전부 ID로 로드하며 상태를 검사하지 않는다. 목록 조회 쿼리만 상태로 필터링할 뿐,
+**변경 경로에는 사실상 아무 제약이 없다.**
+
+### 이 태스크의 성격 — 반드시 읽을 것
+
+따라서 이 태스크는 "흩어진 규칙을 모으는 일"이 아니라 **"지금까지 없던 규칙을 새로 만드는 일"** 이다.
+전이표를 좁게 만들면 지금 200을 반환하던 관리자 조작이 예외를 던진다. 그것은 G5(HTTP 계약 불변)
+위반이다 — 같은 요청에 새로운 실패가 생기는 것도 계약 변경이다.
+
+**따라서 이 태스크의 규칙:**
+
+1. 전이표는 **위 표에서 소스가 좁혀지지 않는 경로(2·4·5·6·7·9번)에 대해 현재 모든 상태를 소스로 허용**한다.
+   실제로 도달 가능한 조합을 임의로 배제하지 않는다.
+2. 좁혀지는 3개(3·8·10번)만 그 제약을 반영한다.
+3. `Article.reject()`의 기존 가드는 **그대로 둔다.** 이미 테스트 2개가 검증하고 있고,
+   예외 타입과 `ErrorCode`가 계약이다.
+4. 결과적으로 표가 막는 것은 **어떤 경로로도 도달 불가능한 전이뿐**이다
+   (예: `DELETED → PENDING`). 이게 이 태스크가 정직하게 얻을 수 있는 전부다.
 
 ### 할 일
-1. `re.kr.icuh.drought.domain.article.ArticleStatus`에 허용 전이표를 추가한다.
-   각 상수가 자신에게서 갈 수 있는 다음 상태 집합을 갖는 형태를 권장한다:
-   ```java
-   public boolean canTransitionTo(ArticleStatus next) { ... }
-   ```
-   `EnumSet`을 쓰되, enum 상수 초기화 순환을 피하려면 `static` 초기화 블록이나
-   `Supplier`로 지연 초기화한다.
-2. 전이표는 **현재 코드가 실제로 수행하는 전이의 합집합**으로 정한다. G9에 따라
-   새 규칙을 발명하지 않는다. 최소한 아래는 허용돼야 한다:
-   - `PENDING → APPROVED` (ApproveCreateArticle, ArticleFinder:43)
-   - `PENDING → REJECTED` (public reject(), ArticleFinder:51)
-   - `APPROVED → DELETED_PENDING`, `UPDATED_APPROVED → DELETED_PENDING` (public delete())
-   - `DELETED_PENDING → DELETED` (ApproveDeleteArticle)
-   - `UPDATED_PENDING → UPDATED_APPROVED` (ApproveUpdateArticle)
-   - `UPDATED_APPROVED → APPROVED` (ArticleFinder:94의 updateArticleV2 경로)
-   실제 코드를 다시 읽어 **누락된 전이가 없는지 확인**한다. 확신이 없는 전이는
-   **허용하는 쪽으로** 정하고 리포트에 적는다 — 잘못 막으면 런타임 장애다.
-3. `Article.changeStatus(ArticleStatus)`가 전이를 검증하게 한다.
-   위반 시 `BusinessException(ErrorCode.INVALID_INPUT)`.
-4. `Article.reject()`의 기존 검사는 전이표로 대체한다(중복 제거).
-   단 **예외 타입과 `ErrorCode`는 그대로** 유지한다 — `ArticleTest`가 이를 검증하고 있고 G5에 걸린다.
-5. 전이표 단위 테스트를 `core-domain`에 추가한다.
-   허용 전이 각각이 `true`, 명백한 불법 전이 몇 개가 `false`인지 검증한다.
-   `core-domain/build.gradle`에 `testImplementation 'org.assertj:assertj-core'`가
-   이미 루트에서 설정돼 있는지 확인한다(루트 `build.gradle`의 `configure([...])` 블록에 포함돼 있다).
 
-### 위험
-이 태스크는 **런타임 동작을 바꾼다.** 전이표가 실제 사용 경로보다 좁으면
-승인 버튼이 예외를 던진다. 2번 항목의 "확신 없으면 허용"을 반드시 지킬 것.
+1. `re.kr.icuh.drought.domain.article.ArticleStatus`에 전이 판정을 추가한다:
+   ```java
+   public boolean canTransitionTo(ArticleStatus next)
+   ```
+   `EnumSet`을 쓰되 enum 상수 초기화 순환을 피할 것(`static` 초기화 블록 또는 지연 초기화).
+   같은 상태로의 자기 전이(8번 `APPROVED → APPROVED`)를 반드시 허용한다.
+2. `Article.changeStatus(ArticleStatus)`가 이 판정을 쓰게 한다.
+   위반 시 `BusinessException(ErrorCode.INVALID_INPUT)`.
+3. **`core-domain`에 전이표 단위 테스트를 추가한다.** 위 표의 10개 경로가 전부 허용되는지
+   각각 단언하고, 도달 불가능한 전이 몇 개가 거부되는지 단언한다.
+   `core-domain`은 루트 `build.gradle`의 `configure([...])` 블록에 포함돼 있어
+   `assertj-core`가 이미 testImplementation으로 붙어 있다. 확인만 하면 된다.
+4. 표를 `ArticleStatus`의 Javadoc으로 남긴다 — 이 지식이 코드에서 사라지지 않도록.
+
+### 하지 말 것
+
+- 변경 경로에 상태 필터를 추가하지 말 것(예: `findArticle`을 상태로 좁히기). 그건 별도 태스크다.
+- `reject()`의 가드를 전이표로 대체하지 말 것. 중복처럼 보이지만 예외 계약이 걸려 있다.
+- 도달 가능성이 의심스러운 전이를 막지 말 것. **확신이 없으면 허용한다.**
 
 ### 완료 조건
 - 전이 규칙 정의가 `ArticleStatus` 한 곳에만 있다
-- 전이표 단위 테스트가 통과한다
-- 기존 `ArticleTest`의 `reject()` 테스트 2개가 통과한다.
-  (Task 4에서 `Article`이 이동하면서 **import 경로는 이미 바뀌어 있다.**
-   이 태스크에서는 단언(assertion) 로직과 기대 예외/`ErrorCode`를 바꾸면 안 된다는 뜻이다.)
+- 위 표의 10개 경로가 전부 허용됨을 검증하는 단위 테스트가 통과한다
+- 기존 `ArticleTest`의 `reject()` 테스트 2개가 통과한다
+  (Task 4에서 `Article`이 이동했으므로 import 경로는 이미 바뀌어 있다.
+   단언 로직과 기대 예외/`ErrorCode`를 바꾸면 안 된다는 뜻이다.)
 - G4의 두 명령이 통과한다
