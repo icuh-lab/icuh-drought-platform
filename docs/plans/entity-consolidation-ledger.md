@@ -304,3 +304,18 @@ Task 6: complete (commits edba259..a2b6176, review clean, 4 minor deferred)
       Article.java:88에 @Column(insertable = false)다.
 
 수정 웨이브 1회 디스패치 (skill: ONE fix dispatch, then ONE scoped re-review)
+
+재리뷰(범위 한정) 결과: 7개 항목 전부 ADDRESSED, 신규 결함 0건.
+  Sha256Test가 실제로 문다는 것을 재검증: 세 벡터에 0x80 이상 바이트(부호확장)와
+  high-nibble 0 바이트(선행 0)가 모두 들어 있어 두 실패모드를 정확값 단언만으로 잡는다.
+  AssertJ .matches는 Pattern.matches라 완전 앵커드. item 4의 두 축소 주장도 파일 대조로 확인.
+
+Controller-side edit (스킬의 "컨트롤러가 직접 고치지 않는다"에서 의도적으로 벗어남, 공개):
+  재리뷰가 범위 밖 관찰로 남긴 ONBOARDING.md:315 — Task 2가 고친 바로 그 문제를 여전히
+  "실제 결함"으로 서술하는 문장 — 를 컨트롤러가 직접 제거했다(커밋 2fd7d50).
+  근거: 두 번째 수정 웨이브는 스킬이 금지하고, 문서 한 줄을 알면서 거짓인 채로 두는 것보다는
+  낫다고 판단했다. 코드 변경 없음(문서 1줄 삭제). 같은 섹션의 나머지 항목은 표본 확인 결과
+  여전히 사실이라 그대로 두었다. — 비용(틀렸을 때): 리뷰되지 않은 문서 편집 1건.
+
+최종 상태: clean build -x test / test 모두 BUILD SUCCESSFUL, 164개 전부 통과.
+브랜치 refactor/entity-consolidation, 커밋 13개, 66 files +1789/-514.
