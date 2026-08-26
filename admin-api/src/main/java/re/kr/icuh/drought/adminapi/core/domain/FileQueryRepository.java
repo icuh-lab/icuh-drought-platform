@@ -2,6 +2,7 @@ package re.kr.icuh.drought.adminapi.core.domain;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.springframework.stereotype.Repository;
+import re.kr.icuh.drought.persistence.article.entity.QFileEntity;
 
 @Repository
 public class FileQueryRepository {

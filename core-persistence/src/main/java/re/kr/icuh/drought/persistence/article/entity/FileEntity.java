@@ -1,4 +1,4 @@
-package re.kr.icuh.drought.publicapi.file.domain;
+package re.kr.icuh.drought.persistence.article.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -6,10 +6,14 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import re.kr.icuh.drought.publicapi.article.domain.Article;
+import re.kr.icuh.drought.domain.article.FileStatus;
 
 import java.time.LocalDateTime;
 
+/**
+ * {@code files} 테이블에 대한 단일 JPA 매핑.
+ * public-api(업로드·다운로드)와 admin-api(승인 워크플로우)가 함께 쓴다.
+ */
 @Entity
 @Table(name = "files")
 @Getter
@@ -55,14 +59,14 @@ public class FileEntity {
         this.filePath = filePath;
         this.fileSize = fileSize;
         this.extension = extension;
-        this.status = status;
+        this.status = status == null ? FileStatus.PENDING : status;
     }
 
-    // 소프트 삭제 메서드
-    // TODO: 파일 자체에서 status를 관리할 필요가 있나..?
-    public void softDelete() {
-        this.status = FileStatus.DELETED_PENDING;
+    public void changeStatus(FileStatus fileStatus) {
+        this.status = fileStatus;
     }
 
-
+    public void assignArticle(Article article) {
+        this.article = article;
+    }
 }

@@ -1,6 +1,6 @@
 package re.kr.icuh.drought.publicapi.file.dto.response;
 
-import re.kr.icuh.drought.publicapi.file.domain.FileEntity;
+import re.kr.icuh.drought.persistence.article.entity.FileEntity;
 
 public record FileResponse(
         Long id,

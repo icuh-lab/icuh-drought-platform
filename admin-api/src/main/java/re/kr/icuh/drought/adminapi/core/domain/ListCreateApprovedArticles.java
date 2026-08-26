@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import re.kr.icuh.drought.adminapi.core.api.controller.v1.response.ArticleListResponse;
 
 import java.util.List;
+import re.kr.icuh.drought.persistence.article.entity.Article;
 
 @Service
 @RequiredArgsConstructor

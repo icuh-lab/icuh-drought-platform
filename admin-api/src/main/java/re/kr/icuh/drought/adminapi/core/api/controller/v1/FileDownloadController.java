@@ -17,9 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import re.kr.icuh.drought.common.error.BusinessException;
 import re.kr.icuh.drought.common.error.ErrorCode;
 import re.kr.icuh.drought.adminapi.core.domain.FileEditRequest;
-import re.kr.icuh.drought.adminapi.core.domain.FileEntity;
+import re.kr.icuh.drought.persistence.article.entity.FileEntity;
 import re.kr.icuh.drought.adminapi.core.domain.FileEditRequestRepository;
-import re.kr.icuh.drought.adminapi.core.domain.FileRepository;
+import re.kr.icuh.drought.persistence.article.repository.FileRepository;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;

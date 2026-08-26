@@ -1,11 +1,11 @@
-package re.kr.icuh.drought.adminapi.core.api.controller.v2;
+package re.kr.icuh.drought.persistence.article.converter;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.AttributeConverter;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
-import re.kr.icuh.drought.adminapi.core.api.controller.v2.request.UpdateArticleRequest;
+import re.kr.icuh.drought.domain.article.UpdateArticleRequest;
 
 import java.util.List;
 

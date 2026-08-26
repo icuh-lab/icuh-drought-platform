@@ -3,6 +3,7 @@ package re.kr.icuh.drought.adminapi.core.domain;
 import org.springframework.stereotype.Service;
 import re.kr.icuh.drought.adminapi.core.api.controller.v1.response.ArticleListResponse;
 import re.kr.icuh.drought.adminapi.core.api.controller.v2.response.UpdateArticleResponse;
+import re.kr.icuh.drought.domain.article.ArticleStatus;
 
 import java.util.List;
 

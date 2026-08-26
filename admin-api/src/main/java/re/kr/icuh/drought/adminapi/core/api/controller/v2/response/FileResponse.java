@@ -1,6 +1,6 @@
 package re.kr.icuh.drought.adminapi.core.api.controller.v2.response;
 
-import re.kr.icuh.drought.adminapi.core.domain.FileEntity;
+import re.kr.icuh.drought.persistence.article.entity.FileEntity;
 
 public record FileResponse(
         Long id,

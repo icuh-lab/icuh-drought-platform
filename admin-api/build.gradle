@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation project(':common')
+    implementation project(':core-domain')
     implementation project(':core-persistence')
 
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
@@ -14,7 +15,6 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
-    implementation 'org.testcontainers:localstack:1.11.3'
 
     implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
     annotationProcessor 'com.querydsl:querydsl-apt:5.0.0:jakarta'

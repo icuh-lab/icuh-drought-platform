@@ -1,6 +1,6 @@
 package re.kr.icuh.drought.publicapi.article.dto.response;
 
-import re.kr.icuh.drought.publicapi.article.domain.Article;
+import re.kr.icuh.drought.persistence.article.entity.Article;
 import re.kr.icuh.drought.publicapi.category.dto.response.DocumentTypeResponse;
 import re.kr.icuh.drought.publicapi.category.dto.response.SubjectDomainResponse;
 import re.kr.icuh.drought.publicapi.file.dto.response.FileResponse;

@@ -7,9 +7,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
-import re.kr.icuh.drought.publicapi.article.domain.Article;
-import re.kr.icuh.drought.publicapi.article.domain.ArticleStatus;
-import re.kr.icuh.drought.publicapi.article.domain.QArticle;
+import re.kr.icuh.drought.domain.article.ArticleStatus;
+import re.kr.icuh.drought.persistence.article.entity.Article;
+import re.kr.icuh.drought.persistence.article.entity.QArticle;
 import re.kr.icuh.drought.publicapi.article.dto.request.ArticleRequest;
 
 import java.util.List;

@@ -74,17 +74,17 @@ XxxRepositoryImpl    ← JPAQueryFactory + BooleanBuilder로 구현
 
 | # | 파일 | 역할 |
 |---|---|---|
-| 1 | `article/domain/Article.java` | 승인 상태 전이·비밀번호 해싱/검증·소프트 삭제·수정 스테이징까지 **모든 도메인 규칙이 실제로 강제되는 유일한 곳** |
+| 1 | `core-persistence` 모듈 `persistence/article/entity/Article.java` (Task 4에서 이동) | 승인 상태 전이·비밀번호 해싱/검증·소프트 삭제·수정 스테이징까지 **모든 도메인 규칙이 실제로 강제되는 유일한 곳** |
 | 2 | `article/application/ArticleService.java` | 트랜잭션 경계를 잡고 비밀번호 게이트를 통과시킨 뒤 게시글+파일을 원자적으로 저장하는 **유스케이스 오케스트레이터** |
 | 3 | `article/infra/ArticleRepositoryImpl.java` | 동적 검색 조건을 조립하면서 승인 상태 필터를 거는 **공개 노출 경계** — 미승인 글 유출을 막는 방어선 |
 | 4 | `file/api/FileController.java` | S3 멀티파트 업로드 4단계 **프로토콜 전체**를 직접 구현 |
-| 5 | `article/dto/UpdateArticleRequestJsonConverter.java` | 수정 요청 record ↔ `pending_update` JSON 컬럼 변환. **"수정은 승인 전까지 반영하지 않는다"는 규칙을 성립시키는 장치** |
+| 5 | `core-persistence` 모듈 `persistence/article/converter/UpdateArticleRequestJsonConverter.java` (Task 3에서 이동) | 수정 요청 record ↔ `pending_update` JSON 컬럼 변환. **"수정은 승인 전까지 반영하지 않는다"는 규칙을 성립시키는 장치** |
 
-> ⚠️ 5번 파일 주의: `UpdateArticleRequest` record의 필드를 바꾸면 **DB에 이미 저장된 JSON의 역직렬화가 실패**합니다. 하위호환을 깨는 변경으로 취급하고 마이그레이션을 동반하세요.
+> ⚠️ 5번 파일 주의: `UpdateArticleRequest` record(`core-domain` 모듈 `domain/article/UpdateArticleRequest.java`, Task 3에서 이동)의 필드를 바꾸면 **DB에 이미 저장된 JSON의 역직렬화가 실패**합니다. 하위호환을 깨는 변경으로 취급하고 마이그레이션을 동반하세요.
 
 ### 꼭 알아야 할 도메인 개념
 
-**`ArticleStatus` 7개 상태로 라이프사이클 전체를 표현합니다:**
+**`ArticleStatus`(`core-domain` 모듈 `domain/article/ArticleStatus.java`, Task 3에서 이동) 7개 상태로 라이프사이클 전체를 표현합니다:**
 
 ```
 등록 → PENDING ─승인→ APPROVED ─수정요청→ UPDATED_PENDING → UPDATED_APPROVED
@@ -312,7 +312,6 @@ PR 대상: develop  (main 아님)
 - `@SortDefault`를 받아놓고 `ArticleRepositoryImpl`이 `orderBy(createdAt.desc())`를 하드코딩합니다. `?sort=views,desc`는 **조용히 무시됩니다.**
 - `ModifyArticleStatusRequest` / `DeleteArticleRequest`에 `@NotNull`이 없어, `password`를 생략하면 400이어야 할 것이 **NPE로 500**이 됩니다.
 - 비밀번호가 **salt 없는 단일 라운드 SHA-256**입니다. 임시 비밀번호가 짧으면 사실상 무방비입니다.
-- `Article.java`가 `org.testcontainers.shaded...Hashing`을 import합니다 — 그래서 테스트 라이브러리(`testcontainers:localstack`)가 `implementation` 스코프에 들어가 있습니다. **프로덕션 코드가 테스트 라이브러리에 의존하는 상태**입니다.
 - `FileController`가 서비스 계층을 건너뛰고 `AmazonS3Client`를 직접 호출합니다. 다른 도메인의 계층 규칙과 어긋납니다.
 - 생성 API가 `ApiResponse.created()`(201)가 아니라 `success()`(200)를 반환합니다.
 - `CategoryController` / `HealthController`는 `ApiResponse`로 감싸지 않는 **예외 케이스**입니다. 새 코드에서 이 방식을 따라하지 마세요.
