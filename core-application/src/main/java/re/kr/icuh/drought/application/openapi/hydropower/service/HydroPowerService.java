@@ -1,6 +1,7 @@
 package re.kr.icuh.drought.application.openapi.hydropower.service;
 
 import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerRequest;
+import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerYearlyRequest;
 import re.kr.icuh.drought.application.openapi.hydropower.response.comparison.DamMonthlyComparisonResponse;
 import re.kr.icuh.drought.application.openapi.hydropower.response.generation.DamMonthlyGenerationResponse;
 import re.kr.icuh.drought.application.openapi.hydropower.response.prediction.MonthlyDamPredictionResponse;
@@ -39,7 +40,7 @@ public class HydroPowerService {
                 .orElseThrow(() -> new CoreException(ErrorType.DATA_NOT_FOUND));
     }
 
-    public DamMonthlyGenerationResponse getMonthlyGeneration(HydroPowerRequest request) {
+    public DamMonthlyGenerationResponse getMonthlyGeneration(HydroPowerYearlyRequest request) {
         List<DamMonthlyGeneration> generations =
                 hydroPowerRepository.damMonthlyGeneration(request.year(), request.damName());
 
@@ -50,7 +51,7 @@ public class HydroPowerService {
         return DamMonthlyGenerationResponse.of(generations);
     }
 
-    public DamMonthlyReservoirStatusResponse getMonthlyReservoirStatus(HydroPowerRequest request) {
+    public DamMonthlyReservoirStatusResponse getMonthlyReservoirStatus(HydroPowerYearlyRequest request) {
         List<DamMonthlyReservoirStatus> statuses =
                 hydroPowerRepository.damMonthlyReservoirStatus(request.year(), request.damName());
 

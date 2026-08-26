@@ -1,6 +1,7 @@
 package re.kr.icuh.drought.openapi.core.api.hydropower;
 
 import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerRequest;
+import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerYearlyRequest;
 import re.kr.icuh.drought.application.openapi.hydropower.response.comparison.DamMonthlyComparisonResponse;
 import re.kr.icuh.drought.application.openapi.hydropower.response.generation.DamMonthlyGenerationResponse;
 import re.kr.icuh.drought.application.openapi.hydropower.response.prediction.MonthlyDamPredictionResponse;
@@ -40,17 +41,17 @@ public class HydroPowerApiController {
     }
 
     @GetMapping("/monthly-generation")
-    public ApiResponse<DamMonthlyGenerationResponse> getMonthlyGeneration(@Valid @ModelAttribute HydroPowerRequest hydroPowerRequestDto) {
+    public ApiResponse<DamMonthlyGenerationResponse> getMonthlyGeneration(@Valid @ModelAttribute HydroPowerYearlyRequest hydroPowerYearlyRequestDto) {
 
-        DamMonthlyGenerationResponse damMonthlyGenerationDto = hydroPowerService.getMonthlyGeneration(hydroPowerRequestDto);
+        DamMonthlyGenerationResponse damMonthlyGenerationDto = hydroPowerService.getMonthlyGeneration(hydroPowerYearlyRequestDto);
 
         return ApiResponse.success(damMonthlyGenerationDto);
     }
 
     @GetMapping("/monthly-reservoir")
-    public ApiResponse<DamMonthlyReservoirStatusResponse> getMonthlyReservoirStatus(HydroPowerRequest hydroPowerRequestDto) {
+    public ApiResponse<DamMonthlyReservoirStatusResponse> getMonthlyReservoirStatus(@Valid @ModelAttribute HydroPowerYearlyRequest hydroPowerYearlyRequestDto) {
 
-        DamMonthlyReservoirStatusResponse damMonthlyReservoirStatusDto = hydroPowerService.getMonthlyReservoirStatus(hydroPowerRequestDto);
+        DamMonthlyReservoirStatusResponse damMonthlyReservoirStatusDto = hydroPowerService.getMonthlyReservoirStatus(hydroPowerYearlyRequestDto);
 
         return ApiResponse.success(damMonthlyReservoirStatusDto);
     }

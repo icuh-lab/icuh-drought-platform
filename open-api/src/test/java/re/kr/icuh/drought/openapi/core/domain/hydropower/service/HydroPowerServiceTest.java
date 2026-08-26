@@ -1,6 +1,7 @@
 package re.kr.icuh.drought.application.openapi.hydropower.service;
 
 import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerRequest;
+import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerYearlyRequest;
 import re.kr.icuh.drought.application.openapi.hydropower.response.generation.DamMonthlyGenerationResponse;
 import re.kr.icuh.drought.application.openapi.hydropower.response.prediction.MonthlyDamPredictionResponse;
 import re.kr.icuh.drought.persistence.openapi.hydropower.entity.DamMonthlyGeneration;
@@ -34,6 +35,7 @@ class HydroPowerServiceTest {
     private HydroPowerService hydroPowerService;
 
     private final HydroPowerRequest request = new HydroPowerRequest("2026", "4", "소양강댐");
+    private final HydroPowerYearlyRequest yearlyRequest = new HydroPowerYearlyRequest("2026", "소양강댐");
 
     @Test
     @DisplayName("월간 댐 예측을 조회해 중첩 응답 DTO로 매핑한다")
@@ -74,7 +76,7 @@ class HydroPowerServiceTest {
         when(hydroPowerRepository.damMonthlyGeneration("2026", "소양강댐"))
                 .thenReturn(List.of(first, second));
 
-        DamMonthlyGenerationResponse response = hydroPowerService.getMonthlyGeneration(request);
+        DamMonthlyGenerationResponse response = hydroPowerService.getMonthlyGeneration(yearlyRequest);
 
         assertThat(response.damName()).isEqualTo("소양강댐");
         assertThat(response.monthlyGenerationDto()).hasSize(2);
@@ -89,7 +91,7 @@ class HydroPowerServiceTest {
         when(hydroPowerRepository.damMonthlyGeneration("2026", "소양강댐"))
                 .thenReturn(List.of());
 
-        assertThatThrownBy(() -> hydroPowerService.getMonthlyGeneration(request))
+        assertThatThrownBy(() -> hydroPowerService.getMonthlyGeneration(yearlyRequest))
                 .isInstanceOf(CoreException.class)
                 .hasFieldOrPropertyWithValue("errorType", ErrorType.DATA_NOT_FOUND);
     }

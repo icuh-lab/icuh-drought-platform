@@ -1,5 +1,6 @@
 package re.kr.icuh.drought.openapi.core.api.wildfire;
 
+import re.kr.icuh.drought.application.openapi.wildfire.request.WildFireForecastRequest;
 import re.kr.icuh.drought.application.openapi.wildfire.request.WildFireRiskIndexRequest;
 import re.kr.icuh.drought.application.openapi.wildfire.response.ForecastResponse;
 import re.kr.icuh.drought.application.openapi.wildfire.response.NewsArticleResponse;
@@ -24,8 +25,8 @@ public class WildFireRiskIndexApiController {
     }
 
     @GetMapping("/forecast")
-    public ApiResponse<List<ForecastResponse>> getForecast(WildFireRiskIndexRequest wildFireRiskIndexRequest) {
-        return ApiResponse.success(wildFireRiskIndexService.getForeCast());
+    public ApiResponse<List<ForecastResponse>> getForecast(@Valid @ModelAttribute WildFireForecastRequest wildFireForecastRequest) {
+        return ApiResponse.success(wildFireRiskIndexService.getForeCast(wildFireForecastRequest));
     }
 
     @GetMapping("/news-article")

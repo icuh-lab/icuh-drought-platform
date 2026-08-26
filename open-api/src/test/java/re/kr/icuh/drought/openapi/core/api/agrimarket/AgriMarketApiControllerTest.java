@@ -1,15 +1,19 @@
 package re.kr.icuh.drought.openapi.core.api.agrimarket;
 
+import re.kr.icuh.drought.application.openapi.agrimarket.request.AgriMarketRequest;
 import re.kr.icuh.drought.application.openapi.agrimarket.response.prediction.MonthlyMarketPredictionResponse;
 import re.kr.icuh.drought.application.openapi.agrimarket.service.AgriMarketService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -49,6 +53,23 @@ class AgriMarketApiControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.result").value("ERROR"))
                 .andExpect(jsonPath("$.error.code").value("E400"));
+    }
+
+    @Test
+    @DisplayName("0을 채운 월도 허용하고 서비스에는 0을 뗀 값으로 전달한다")
+    void normalizesZeroPaddedMonth() throws Exception {
+        when(agriMarketService.getAgriMarketPricePredict(any()))
+                .thenReturn(MonthlyMarketPredictionResponse.builder().year("2026").build());
+
+        mockMvc.perform(get("/api/v1/agrimarket/market-price")
+                        .param("year", "2026")
+                        .param("month", "07")
+                        .param("location", "서울"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<AgriMarketRequest> captor = ArgumentCaptor.forClass(AgriMarketRequest.class);
+        verify(agriMarketService).getAgriMarketPricePredict(captor.capture());
+        assertThat(captor.getValue().month()).isEqualTo("7");
     }
 
     @Test
