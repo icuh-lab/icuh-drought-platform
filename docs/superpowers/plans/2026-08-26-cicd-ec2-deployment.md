@@ -588,30 +588,46 @@ sudo mkdir -p /opt/icuh
 sudo chown -R "$USER":"$USER" /opt/icuh
 ```
 
-이미지를 태그한다:
+컨테이너 이름은 아래에서 한 번만 적는다. 나머지 명령은 모두 이 값(`$OLD`)을 그대로 쓴다 — 같은
+이름을 두 군데 이상에 따로 적으면 한쪽만 고치고 다른 쪽을 놓치는 사고가 나기 때문에, 고칠 곳을
+하나로 줄인다. `OLD`는 이 셸 세션에만 남는 변수라서, 접속이 끊겼다가 다시 붙었다면 Step 8 전에
+이 블록부터 다시 실행해야 한다.
 
 ```bash
-OLD_IMAGE=$(docker inspect --format '{{.Config.Image}}' icuh_platform)
+# Step 1에서 확인한 실제 컨테이너 이름으로 바꾼다. 아래 명령은 모두 이 값을 쓴다.
+OLD=icuh_platform
+
+OLD_IMAGE=$(docker inspect --format '{{.Config.Image}}' "$OLD")
 echo "$OLD_IMAGE"
 docker tag "$OLD_IMAGE" icuh-platform:rollback
-docker images | grep icuh-platform
-```
 
-이미지만으로는 부족하다 — Step 8의 `docker rm`이 컨테이너의 실행 설정(환경변수 십여 개, 포트 매핑,
-볼륨 마운트)까지 함께 지운다. 그 설정을 파일로 남긴다:
-
-```bash
-docker inspect icuh_platform > /opt/icuh/old-container-inspect.json
-docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' icuh_platform > /opt/icuh/old-container-env.txt
-wc -l /opt/icuh/old-container-inspect.json /opt/icuh/old-container-env.txt
+docker inspect "$OLD" > /opt/icuh/old-container-inspect.json
+docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$OLD" > /opt/icuh/old-container-env.txt
 chmod 600 /opt/icuh/old-container-inspect.json /opt/icuh/old-container-env.txt
 ```
+
+이미지 태그만으로는 부족하다 — Step 8의 `docker rm`이 컨테이너의 실행 설정(환경변수 십여 개, 포트
+매핑, 볼륨 마운트)까지 함께 지운다. 그래서 `docker inspect` 전체 출력과 환경변수 목록도 파일로 남긴다.
 
 `old-container-env.txt`에는 구 앱의 DB 비밀번호와 AWS 시크릿 키가 평문으로 들어 있다. `chmod 600`으로
 권한을 좁히고, 새 배포가 충분히 안정화되어 롤백 가능성이 없다고 판단되면 두 파일을 삭제한다.
 
-`icuh-platform:rollback` 태그가 보이고 두 백업 파일이 `wc -l`에서 0보다 큰 줄 수로 나오면 성공이다.
-이 이미지와 두 파일이 있으면 언제든 구 앱을 8081로 되돌릴 수 있다.
+줄 수만 세는 확인은 속는다 — `$OLD`에 존재하지 않는 컨테이너 이름을 넣으면 `docker inspect`는
+표준출력에 `[]` 한 줄만 내보내고 종료 코드는 0이 아니지만, 그 한 줄이 그대로 파일에 리다이렉트돼
+"0줄보다 많다"는 확인은 통과해 버린다. 그래서 줄 수 대신 파일 내용을 본다:
+
+```bash
+grep -q '"Id"' /opt/icuh/old-container-inspect.json \
+  && echo "설정 백업 OK" \
+  || echo "실패: '$OLD' 컨테이너를 찾지 못했다. Step 1 출력에서 실제 이름을 확인하고 다시 실행한다."
+test -s /opt/icuh/old-container-env.txt \
+  && echo "환경변수 백업 OK ($(wc -l < /opt/icuh/old-container-env.txt)줄)" \
+  || echo "실패: 환경변수를 받지 못했다."
+docker images | grep icuh-platform
+```
+
+`설정 백업 OK`·`환경변수 백업 OK`가 둘 다 나오고 `icuh-platform:rollback`이 보이면 성공이다. 이
+이미지와 두 파일이 있으면 언제든 구 앱을 8081로 되돌릴 수 있다.
 
 - [ ] **Step 5: 배포 디렉터리를 만든다**
 
