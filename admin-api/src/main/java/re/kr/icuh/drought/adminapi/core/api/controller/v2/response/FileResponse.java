@@ -17,7 +17,7 @@ public record FileResponse(
                 fileEntity.getExtension(),
                 fileEntity.getFileSize(),
                 fileEntity.getFilePath(),
-                "/api/v1/multipart-upload/files" + fileEntity.getId() + "/download"
+                "/api/v1/multipart-upload/files/" + fileEntity.getId() + "/download"
         );
     }
 }
