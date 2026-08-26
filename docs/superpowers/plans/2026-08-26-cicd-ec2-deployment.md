@@ -773,7 +773,18 @@ Settings → Secrets and variables → Actions.
 
 - [ ] **Step 2: `deploy` job을 추가한다**
 
-`.github/workflows/deploy.yml` 끝에 붙인다.
+`.github/workflows/deploy.yml`에 두 군데를 손본다: `concurrency:` 블록은 `on:` 다음, `jobs:` 앞에 넣고, `deploy` job은 파일 끝에 붙인다.
+
+```yaml
+# 연이은 실행이 같은 EC2 보안그룹 규칙을 두고 경쟁하지 않도록 전체 워크플로를 직렬화한다.
+# cancel-in-progress는 켜지 않는다 — Close SSH port는 always()라 취소돼도 22번
+# 포트 자체는 대개 닫힌다. 진짜 문제는 deploy job의 !cancelled()다: 이미 실행
+# 중인 job은 취소돼도 그 조건을 다시 평가하지 않으므로, 한창 배포/롤백 중인
+# job이 강제로 끊길 수 있다 — !cancelled()가 이를 막아 준다고 오해하면 안 된다.
+concurrency:
+  group: deploy-ec2
+  cancel-in-progress: false
+```
 
 ```yaml
   deploy:
@@ -783,7 +794,12 @@ Settings → Secrets and variables → Actions.
     # 배포를 강행해 버린다.
     if: ${{ !cancelled() && (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # timeout-minutes 산정 근거: 설정(체크아웃~SSH 준비, 각 스텝 수십 초) +
+    # pull/up(수 분) + 헬스체크 루프(데드라인 240초 상한) + 롤백 pull/up(수 분) +
+    # 롤백 헬스체크 루프(데드라인 240초 상한)를 다 더해도 20분 안팎이다.
+    # 25분은 그 위에 여유를 둔 값이다 — 루프의 deadline(현재 240초)을 바꾸면
+    # 이 숫자도 다시 계산해야 한다.
+    timeout-minutes: 25
     permissions:
       contents: read
       packages: read
@@ -862,25 +878,32 @@ Settings → Secrets and variables → Actions.
           ssh -i deploy_key.pem -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes \
             ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} bash -s <<'REMOTE'
           set -u
-          for i in $(seq 1 60); do
+          deadline=$(( $(date +%s) + 240 ))
+          ok=0
+          while [ "$(date +%s)" -lt "$deadline" ]; do
             if curl -fsS -m 3 localhost:8081/health >/dev/null \
                && curl -fsS -m 3 localhost:8082/health >/dev/null \
                && curl -fsS -m 3 localhost:8083/health >/dev/null; then
-              echo "3개 앱 모두 정상"
-              exit 0
+              ok=1
+              break
             fi
             sleep 5
           done
+          if [ "$ok" -eq 1 ]; then
+            echo "3개 앱 모두 정상"
+            exit 0
+          fi
           echo "헬스체크 실패 — 최근 로그"
           cd /opt/icuh && docker compose logs --tail 200
           exit 1
           REMOTE
 
-      - name: Roll back on failed health check
+      - name: Roll back failed deployment
         if: steps.deploy.outcome == 'failure' || steps.health.outcome == 'failure'
         run: |
+          ROLLBACK_OK=1
           ssh -i deploy_key.pem -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes \
-            ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} bash -s <<'REMOTE'
+            ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} bash -s <<'REMOTE' || ROLLBACK_OK=0
           set -eu
           cd /opt/icuh
           if [ ! -s .last-good ]; then
@@ -894,20 +917,30 @@ Settings → Secrets and variables → Actions.
             exit 1
           fi
           IMAGE_TAG="$PREV" docker compose up -d
-          for i in $(seq 1 60); do
+          deadline=$(( $(date +%s) + 240 ))
+          ok=0
+          while [ "$(date +%s)" -lt "$deadline" ]; do
             if curl -fsS -m 3 localhost:8081/health >/dev/null \
                && curl -fsS -m 3 localhost:8082/health >/dev/null \
                && curl -fsS -m 3 localhost:8083/health >/dev/null; then
-              echo "롤백 후 정상 확인"
-              exit 0
+              ok=1
+              break
             fi
             sleep 5
           done
+          if [ "$ok" -eq 1 ]; then
+            echo "롤백 후 정상 확인"
+            exit 0
+          fi
           echo "롤백했으나 헬스체크 여전히 실패 — 수동 개입 필요"
           docker compose logs --tail 200
           exit 1
           REMOTE
-          echo "::error::헬스체크 실패로 롤백했다"
+          if [ "$ROLLBACK_OK" -eq 1 ]; then
+            echo "::error::배포 실패로 직전 성공 태그로 롤백했고, 롤백 후 헬스체크는 통과했다."
+          else
+            echo "::error::배포 실패 후 롤백도 정상화되지 않았다. 수동 개입이 필요하다."
+          fi
           exit 1
 
       - name: Record last-good tag
@@ -924,7 +957,7 @@ Settings → Secrets and variables → Actions.
           # 같이 옮기려면 롤백 쪽에 로그인 스텝도 추가해야 한다.
 
       - name: Close SSH port
-        if: always() && steps.open.outcome == 'success'
+        if: always() && steps.open.conclusion != 'skipped'
         run: |
           for i in 1 2 3 4 5; do
             if aws ec2 revoke-security-group-ingress \
