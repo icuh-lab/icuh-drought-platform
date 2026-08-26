@@ -1,11 +1,13 @@
 # EC2 /opt/icuh/docker-compose.yml 로 배치된다.
-# IMAGE_TAG만 배포 시점에 셸 환경변수로 주입받고, 앱 환경변수는 같은 디렉터리의 .env에서 읽는다.
+# IMAGE_TAG만 배포 시점에 셸 환경변수로 주입받고, 앱 환경변수는 같은 디렉터리의 서비스별 .env.<name>에서 읽는다.
+# .env를 세 컨테이너가 공유하면 admin-api 전용 시크릿이 인터넷에 노출된 public-api/open-api에도 실린다.
+# 서비스별로 분리해 그 경로를 막는다.
 
 services:
   public-api:
     image: ghcr.io/icuh-lab/icuh-drought-platform/public-api:${IMAGE_TAG}
     container_name: icuh-public-api
-    env_file: .env
+    env_file: .env.public
     ports:
       - "8081:8081"
     volumes:
@@ -15,20 +17,16 @@ services:
   admin-api:
     image: ghcr.io/icuh-lab/icuh-drought-platform/admin-api:${IMAGE_TAG}
     container_name: icuh-admin-api
-    env_file: .env
+    env_file: .env.admin
     # 인증이 없는 앱이다. 호스트 루프백에만 바인딩해 외부에서 직접 닿지 못하게 한다.
     ports:
       - "127.0.0.1:8082:8082"
-    volumes:
-      - ./logs/admin:/root/log/spring
     restart: unless-stopped
 
   open-api:
     image: ghcr.io/icuh-lab/icuh-drought-platform/open-api:${IMAGE_TAG}
     container_name: icuh-open-api
-    env_file: .env
+    env_file: .env.open
     ports:
       - "8083:8083"
-    volumes:
-      - ./logs/open:/root/log/spring
     restart: unless-stopped

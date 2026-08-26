@@ -4,7 +4,7 @@
 
 **Goal:** `main`에 머지되면 3개 실행 모듈(public-api·admin-api·open-api)이 GHCR 이미지로 빌드되어 기존 EC2 한 대에 docker compose로 무인 배포되고, 실패 시 직전 성공 이미지로 자동 롤백되는 파이프라인을 만든다.
 
-**Architecture:** CI에서 `./gradlew build`를 **한 번** 돌려 jar 3개를 만들고, Dockerfile은 런타임 스테이지만 두어 jar를 복사만 한다(이전 프로젝트는 컨테이너 안에서 gradle 빌드를 반복했다). 이미지는 커밋 SHA로 태깅해 GHCR에 올리고, 배포는 Actions가 보안그룹 22번을 한시적으로 열어 SSH로 들어가 `docker compose pull && up -d`만 실행한다. 앱 환경변수 20여 개는 EC2의 `/opt/icuh/.env`(600)에 상주하고 Actions는 이미지 태그 하나만 넘긴다.
+**Architecture:** CI에서 `./gradlew build`를 **한 번** 돌려 jar 3개를 만들고, Dockerfile은 런타임 스테이지만 두어 jar를 복사만 한다(이전 프로젝트는 컨테이너 안에서 gradle 빌드를 반복했다). 이미지는 커밋 SHA로 태깅해 GHCR에 올리고, 배포는 Actions가 보안그룹 22번을 한시적으로 열어 SSH로 들어가 `docker compose pull && up -d`만 실행한다. 앱 환경변수 20여 개는 EC2의 `/opt/icuh/.env.{public,admin,open}`(각 600)에 서비스별로 나뉘어 상주하고 Actions는 이미지 태그 하나만 넘긴다.
 
 **Tech Stack:** GitHub Actions · GHCR · Docker / docker compose v2 · eclipse-temurin:17-jre · AWS EC2 + 보안그룹 · Gradle 8.13 / JDK 17
 
@@ -31,7 +31,7 @@
 | 이미지 태그 | `:latest` 고정 | 커밋 SHA + latest |
 | 빌드 횟수 | CI 1회 + Dockerfile 안 1회 = 2회 | CI 1회 |
 | 레지스트리 | Docker Hub (시크릿 3개) | GHCR (`GITHUB_TOKEN`, 시크릿 0개) |
-| 시크릿 전달 | `docker run -e` 인라인 | EC2 `.env` 상주 |
+| 시크릿 전달 | `docker run -e` 인라인 | EC2 서비스별 `.env` 상주 |
 | 배포 명령 | `stop → rm → run` | `compose pull && up -d` |
 | 롤백 | 불가 | `.last-good` 태그로 자동/수동 |
 | PR 동작 | PR에서도 EC2 배포 | PR은 검증만 |
@@ -41,9 +41,11 @@ EC2 파일 배치:
 ```
 /opt/icuh/
 ├── docker-compose.yml   ← 저장소에서 관리, 배포마다 scp로 갱신
-├── .env                 ← 앱 환경변수. 600, git 미포함, 수동 관리
+├── .env.public          ← public-api 환경변수. 600, git 미포함, 수동 관리
+├── .env.admin           ← admin-api 환경변수. 600, git 미포함, 수동 관리
+├── .env.open            ← open-api 환경변수. 600, git 미포함, 수동 관리
 ├── .last-good           ← 마지막 헬스체크 통과 SHA
-└── logs/{public,admin,open}/
+└── logs/public/         ← public-api만 파일 로그를 남긴다. admin-api·open-api는 표준출력만 쓴다.
 ```
 
 ---
@@ -160,7 +162,7 @@ git commit -m "build: 3개 실행 모듈이 공유하는 런타임 Dockerfile �
 
 **Files:**
 - Create: `deploy/docker-compose.yml`
-- Create: `deploy/.env.example`
+- Create: `deploy/.env.public.example`, `deploy/.env.admin.example`, `deploy/.env.open.example`
 - Create: `deploy/README.md`
 
 **Interfaces:**
@@ -171,16 +173,21 @@ git commit -m "build: 3개 실행 모듈이 공유하는 런타임 Dockerfile �
 
 Run:
 ```bash
-IMAGE_TAG=testsha docker compose -f deploy/docker-compose.yml --env-file deploy/.env.example config
+IMAGE_TAG=testsha docker compose -f deploy/docker-compose.yml config
 ```
 Expected: FAIL — `no such file or directory`.
 
-- [ ] **Step 2: `deploy/.env.example`을 만든다**
+- [ ] **Step 2: 서비스별 `deploy/.env.<name>.example`을 만든다**
 
-실제 값이 아닌 자리표시자만 넣는다. 이 파일은 커밋되고, 실제 `.env`는 EC2에만 둔다.
+실제 값이 아닌 자리표시자만 넣는다. 이 파일들은 커밋되고, 실제 `.env.<name>`은 EC2에만 둔다.
+`.env` 하나를 세 컨테이너가 공유하면 admin-api 전용 시크릿이 인터넷에 노출된 public-api·open-api 프로세스
+환경에도 실려 들어가므로, 서비스별로 분리한다. `SPRING_PROFILES_ACTIVE=prod`는 각 컨테이너가 모두 필요로
+하므로 세 파일 모두에 넣는다.
+
+`deploy/.env.public.example`:
 
 ```bash
-# EC2 /opt/icuh/.env 템플릿. 실제 값을 채워 600 권한으로 두고 절대 커밋하지 않는다.
+# EC2 /opt/icuh/.env.public 템플릿. 실제 값을 채워 600 권한으로 두고 절대 커밋하지 않는다.
 # 항목 근거: RUNTIME_CONFIG.md
 
 SPRING_PROFILES_ACTIVE=prod
@@ -194,6 +201,15 @@ PUBLIC_S3_BUCKET_NAME=CHANGEME
 PUBLIC_AWS_REGION=ap-northeast-2
 PUBLIC_AWS_ACCESS_KEY_ID=CHANGEME
 PUBLIC_AWS_SECRET_ACCESS_KEY=CHANGEME
+```
+
+`deploy/.env.admin.example`:
+
+```bash
+# EC2 /opt/icuh/.env.admin 템플릿. 실제 값을 채워 600 권한으로 두고 절대 커밋하지 않는다.
+# 항목 근거: RUNTIME_CONFIG.md
+
+SPRING_PROFILES_ACTIVE=prod
 
 # --- admin-api (8082, 보안그룹 미개방) ---
 ADMIN_DB_URL=jdbc:mysql://CHANGEME:3306/ACTUAL_DRGHT
@@ -204,6 +220,15 @@ ADMIN_S3_BUCKET_NAME=CHANGEME
 ADMIN_AWS_REGION=ap-northeast-2
 ADMIN_AWS_ACCESS_KEY_ID=CHANGEME
 ADMIN_AWS_SECRET_ACCESS_KEY=CHANGEME
+```
+
+`deploy/.env.open.example`:
+
+```bash
+# EC2 /opt/icuh/.env.open 템플릿. 실제 값을 채워 600 권한으로 두고 절대 커밋하지 않는다.
+# 항목 근거: RUNTIME_CONFIG.md
+
+SPRING_PROFILES_ACTIVE=prod
 
 # --- open-api (8083) ---
 OPEN_API_DB_URL=jdbc:mysql://CHANGEME:3306/ACTUAL_DRGHT
@@ -212,17 +237,22 @@ OPEN_API_DB_PASSWORD=CHANGEME
 OPEN_API_CORS_ALLOWED_ORIGINS=https://CHANGEME
 ```
 
+저장소 루트의 `.gitignore`에 `deploy/.env*`(템플릿 `.example` 제외)를 추가해, 실수로 실제 값을 커밋하는 경로를
+한 겹 더 막는다.
+
 - [ ] **Step 3: `deploy/docker-compose.yml`을 만든다**
 
 ```yaml
 # EC2 /opt/icuh/docker-compose.yml 로 배치된다.
-# IMAGE_TAG만 배포 시점에 셸 환경변수로 주입받고, 앱 환경변수는 같은 디렉터리의 .env에서 읽는다.
+# IMAGE_TAG만 배포 시점에 셸 환경변수로 주입받고, 앱 환경변수는 같은 디렉터리의 서비스별 .env.<name>에서 읽는다.
+# .env를 세 컨테이너가 공유하면 admin-api 전용 시크릿이 인터넷에 노출된 public-api/open-api에도 실린다.
+# 서비스별로 분리해 그 경로를 막는다.
 
 services:
   public-api:
     image: ghcr.io/icuh-lab/icuh-drought-platform/public-api:${IMAGE_TAG}
     container_name: icuh-public-api
-    env_file: .env
+    env_file: .env.public
     ports:
       - "8081:8081"
     volumes:
@@ -232,34 +262,42 @@ services:
   admin-api:
     image: ghcr.io/icuh-lab/icuh-drought-platform/admin-api:${IMAGE_TAG}
     container_name: icuh-admin-api
-    env_file: .env
+    env_file: .env.admin
     # 인증이 없는 앱이다. 호스트 루프백에만 바인딩해 외부에서 직접 닿지 못하게 한다.
     ports:
       - "127.0.0.1:8082:8082"
-    volumes:
-      - ./logs/admin:/root/log/spring
     restart: unless-stopped
 
   open-api:
     image: ghcr.io/icuh-lab/icuh-drought-platform/open-api:${IMAGE_TAG}
     container_name: icuh-open-api
-    env_file: .env
+    env_file: .env.open
     ports:
       - "8083:8083"
-    volumes:
-      - ./logs/open:/root/log/spring
     restart: unless-stopped
 ```
 
 admin-api는 `127.0.0.1:8082:8082`로 묶는다. 보안그룹 설정과 무관하게 호스트 밖에서 닿지 않으므로 방어가 두 겹이 된다.
 
+`public-api`만 `volumes`가 있다. `application-prod.yml`이 `logback-prod.xml`을 통해 `${user.home}/log/spring`에
+파일 로그를 쓰도록 설정된 것은 public-api뿐이고, admin-api·open-api는 별도 logback 설정이 없어 표준출력으로만
+로그를 낸다. 없는 파일 로그 경로에 빈 볼륨을 걸어두면 실제로는 비어 있는데 운영자에게는 "로그가 쌓이고 있다"는
+잘못된 인상을 준다.
+
 - [ ] **Step 4: 렌더링을 확인한다**
 
-Run:
+렌더링에는 각 서비스가 참조하는 `.env.public`/`.env.admin`/`.env.open`이 실제로 있어야 한다(`env_file:`은 파일
+존재 여부를 그 자리에서 검증한다). 커밋되는 건 `.example` 뿐이므로, 검증 때만 임시로 복사했다가 지운다.
+
 ```bash
-IMAGE_TAG=testsha docker compose -f deploy/docker-compose.yml --env-file deploy/.env.example config | grep -E "image:|published:"
+cp deploy/.env.public.example deploy/.env.public
+cp deploy/.env.admin.example deploy/.env.admin
+cp deploy/.env.open.example deploy/.env.open
+IMAGE_TAG=testsha docker compose -f deploy/docker-compose.yml config | grep -E "image:|published:"
+rm deploy/.env.public deploy/.env.admin deploy/.env.open
 ```
-Expected: 3개 이미지가 `:testsha` 태그로, 포트가 `8081` / `127.0.0.1:8082` / `8083`으로 렌더링된다.
+Expected: 3개 이미지가 `:testsha` 태그로, 포트가 `8081` / `127.0.0.1:8082` / `8083`으로 렌더링된다. 임시 파일을
+지운 뒤 `git status --short`로 실제 `.env.*`가 남지 않았는지 확인한다.
 
 - [ ] **Step 5: `deploy/README.md`를 만든다**
 
@@ -273,8 +311,19 @@ EC2 한 대에 public-api(8081) · admin-api(8082) · open-api(8083) 세 컨테�
 | 파일 | 위치 | 관리 |
 |---|---|---|
 | `docker-compose.yml` | 저장소 → 배포마다 EC2 `/opt/icuh/`로 scp | git |
-| `.env` | EC2 `/opt/icuh/.env` (600) | 수동. `.env.example` 참고 |
+| `.env.public` | EC2 `/opt/icuh/.env.public` (600) | 수동. `.env.public.example` 참고 |
+| `.env.admin` | EC2 `/opt/icuh/.env.admin` (600) | 수동. `.env.admin.example` 참고 |
+| `.env.open` | EC2 `/opt/icuh/.env.open` (600) | 수동. `.env.open.example` 참고 |
 | `.last-good` | EC2 `/opt/icuh/.last-good` | 배포 워크플로가 갱신 |
+
+세 서비스가 `.env` 하나를 공유하면 admin-api 전용 시크릿(DB 비밀번호 등)이 인터넷에 노출된 public-api·open-api
+컨테이너의 프로세스 환경에도 실린다. 그래서 서비스마다 별도 env 파일을 쓴다.
+
+## 로그
+
+`public-api`만 `./logs/public`에 파일 로그를 남긴다(`application-prod.yml`이 `logback-prod.xml`을 통해
+`${user.home}/log/spring`에 쓰도록 설정되어 있다). `admin-api`·`open-api`는 별도 logback 설정이 없어 표준출력으로만
+로그를 낸다 — `docker logs icuh-admin-api` / `docker logs icuh-open-api`로 확인한다.
 
 ## 로컬에서 이미지 빌드
 
@@ -543,18 +592,22 @@ docker images | grep icuh-platform
 - [ ] **Step 5: 배포 디렉터리를 만든다**
 
 ```bash
-sudo mkdir -p /opt/icuh/logs/{public,admin,open}
+sudo mkdir -p /opt/icuh/logs/public
 sudo chown -R "$USER":"$USER" /opt/icuh
 ```
 
-- [ ] **Step 6: `.env`를 작성한다**
+- [ ] **Step 6: 서비스별 `.env.<name>`을 작성한다**
 
-저장소의 `deploy/.env.example`을 기준으로 실제 값을 채운다.
+저장소의 `deploy/.env.public.example` · `deploy/.env.admin.example` · `deploy/.env.open.example`을 기준으로
+실제 값을 채운다. 세 파일로 나누는 이유는 한 `.env`를 세 컨테이너가 공유하면 admin-api 전용 시크릿이
+인터넷에 노출된 public-api·open-api 프로세스 환경에도 실리기 때문이다.
 
 ```bash
-vi /opt/icuh/.env      # CHANGEME를 모두 실제 값으로
-chmod 600 /opt/icuh/.env
-grep -c CHANGEME /opt/icuh/.env    # 0 이어야 한다
+vi /opt/icuh/.env.public   # CHANGEME를 모두 실제 값으로
+vi /opt/icuh/.env.admin
+vi /opt/icuh/.env.open
+chmod 600 /opt/icuh/.env.public /opt/icuh/.env.admin /opt/icuh/.env.open
+grep -c CHANGEME /opt/icuh/.env.public /opt/icuh/.env.admin /opt/icuh/.env.open   # 모두 0 이어야 한다
 ```
 
 - [ ] **Step 7: compose 파일을 배치하고 이미지를 미리 받아본다**
@@ -594,7 +647,7 @@ curl -fsS localhost:8082/health && echo " admin OK"
 curl -fsS localhost:8083/health && echo " open OK"
 ```
 
-셋 다 성공해야 한다. 실패하면 `docker compose logs <service>`로 원인을 본다. 대개 `.env`의 DB 접속 정보 문제다.
+셋 다 성공해야 한다. 실패하면 `docker compose logs <service>`로 원인을 본다. 대개 해당 서비스의 `.env.<name>`의 DB 접속 정보 문제다.
 
 되돌리려면: `docker compose down && docker run -d --name icuh_platform -p 8081:8081 icuh-platform:rollback` (원래 실행 옵션은 `icuh-platform/.github/workflows/cicd.yml`의 Deploy 스텝 참고).
 
@@ -634,7 +687,7 @@ git commit -m "docs: EC2 최초 세팅 런북과 실행 결과 기록"
 - Modify: `.github/workflows/deploy.yml` (Task 4에서 만든 파일에 `deploy` job 추가)
 
 **Interfaces:**
-- Consumes: Task 4의 `build-and-push` job, Task 2의 compose 파일, Task 5에서 배치한 `/opt/icuh/.env`와 `.last-good`.
+- Consumes: Task 4의 `build-and-push` job, Task 2의 compose 파일, Task 5에서 배치한 `/opt/icuh/.env.{public,admin,open}`와 `.last-good`.
 - Produces: 완성된 배포 파이프라인.
 
 - [ ] **Step 1: GitHub Secrets를 정리한다**
