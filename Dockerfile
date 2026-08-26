@@ -7,7 +7,10 @@ WORKDIR /app
 
 COPY ${MODULE}/build/libs/*-SNAPSHOT.jar app.jar
 
-# 컨테이너 메모리 한도를 기준으로 힙을 잡는다. EC2 한 대에 JVM 3개가 뜨므로 여유를 남긴다.
+# 힙 상한은 "컨테이너 메모리 한도의 70%"다. 한도가 걸려 있지 않으면 그 기준이 호스트 전체
+# 메모리가 되어, EC2 한 대에 JVM 3개가 뜨는 이 구성에서는 210% 과다배정이 된다.
+# 한도는 이 파일이 아니라 deploy/docker-compose.yml의 서비스별 mem_limit이 건다 —
+# 그 값을 지우면 이 옵션은 보호 장치가 아니라 위험 요소가 된다.
 ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=70 -Duser.timezone=Asia/Seoul"
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
