@@ -55,6 +55,19 @@ class FreshFoodApiControllerTest {
     }
 
     @Test
+    @DisplayName("0을 채운 월도 허용한다")
+    void acceptsZeroPaddedMonth() throws Exception {
+        when(freshFoodService.getFreshVegetableIndex(any()))
+                .thenReturn(new FreshVegetableIndexResponse("2026-07-01", List.of(), Map.of()));
+
+        mockMvc.perform(get("/api/v1/freshfood/fresh-vegetable")
+                        .param("year", "2026")
+                        .param("month", "07"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result").value("SUCCESS"));
+    }
+
+    @Test
     @DisplayName("연도가 비어 있으면 400을 응답한다")
     void returnsBadRequestForMissingYear() throws Exception {
         mockMvc.perform(get("/api/v1/freshfood/fresh-vegetable")

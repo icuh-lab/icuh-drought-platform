@@ -2,24 +2,24 @@
 
 ## 데이터 기간: 2022-01 ~ 2024-10
 ## 댐 이름: 소양강, 대청, 충주, 합천
-## 연, 월: year값은 YYYY 형태이고, month는 한자릿수의 해당하는 월인 경우 M, 두자릿수인경우 MM
+## 연, 월: year는 YYYY, month는 M 또는 MM (7, 07 모두 허용 — 서버가 0을 떼고 조회한다)
 ### [GET] 댐별 월간 예측 정보
 GET http://localhost:8080/api/v1/hydropower/monthly-predict?year=2024&month=1&damName=소양강
 
 ## 데이터 기간: 2023-01 ~ 2024-10
 ## 댐 이름: 소양강, 대청, 충주, 합천
-## 연, 월: year값은 YYYY 형태이고, month는 한자릿수의 해당하는 월인 경우 M, 두자릿수인경우 MM
+## 연, 월: year는 YYYY, month는 M 또는 MM (7, 07 모두 허용 — 서버가 0을 떼고 조회한다)
 ### [GET] 댐별 월간 발전 실적
 GET http://localhost:8080/api/v1/hydropower/monthly-comparison?year=2024&month=2&damName=대청
 
 ## 데이터 기간: 2021-01 ~ 2024-12
 ## 댐 이름: 소양강, 대청, 충주, 합천
-## 연, 월: year값은 YYYY 형태이고, month는 한자릿수의 해당하는 월인 경우 M, 두자릿수인경우 MM
-### [GET] 댐별 월간 발전 실적
-GET http://localhost:8080/api/v1/hydropower/monthly-generation?year=2024&month=3&damName=충주
+## 연: year는 YYYY. 월 파라미터는 받지 않는다.
+### [GET] 댐별 월간 발전 실적 (연 단위 — 해당 연도 12개월 배열)
+GET http://localhost:8080/api/v1/hydropower/monthly-generation?year=2024&damName=충주
 
 ## 데이터 기간: 2021-01 ~ 2024-12
 ## 댐 이름: 소양강, 대청, 충주, 합천
-## 연, 월: year값은 YYYY 형태이고, month는 한자릿수의 해당하는 월인 경우 M, 두자릿수인경우 MM
-### [GET] 댐별 월간 저수 현황
-GET http://localhost:8080/api/v1/hydropower/monthly-reservoir?year=2021&month=4&damName=합천
+## 연: year는 YYYY. 월 파라미터는 받지 않는다.
+### [GET] 댐별 월간 저수 현황 (연 단위 — 해당 연도 12개월 배열)
+GET http://localhost:8080/api/v1/hydropower/monthly-reservoir?year=2021&damName=합천

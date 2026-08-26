@@ -1,5 +1,8 @@
 package re.kr.icuh.drought.application.openapi.wildfire.service;
 
+import re.kr.icuh.drought.common.openapi.error.CoreException;
+import re.kr.icuh.drought.common.openapi.error.ErrorType;
+import re.kr.icuh.drought.application.openapi.wildfire.request.WildFireForecastRequest;
 import re.kr.icuh.drought.application.openapi.wildfire.request.WildFireRiskIndexRequest;
 import re.kr.icuh.drought.application.openapi.wildfire.response.ForecastResponse;
 import re.kr.icuh.drought.application.openapi.wildfire.response.NewsArticleResponse;
@@ -8,6 +11,7 @@ import re.kr.icuh.drought.persistence.openapi.wildfire.repository.WildFireRiskIn
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -25,9 +29,9 @@ public class WildFireRiskIndexService {
         this.wildFireRiskIndexRepository = wildFireRiskIndexRepository;
     }
 
-    public List<ForecastResponse> getForeCast() {
+    public List<ForecastResponse> getForeCast(WildFireForecastRequest request) {
 
-        LocalDateTime currentTime = getHour();
+        LocalDateTime currentTime = resolveBaseTime(request);
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
@@ -62,12 +66,27 @@ public class WildFireRiskIndexService {
                 .toList();
     }
 
-    private LocalDateTime getHour() {
+    /**
+     * 조회 기준 시각을 정한다.
+     * 날짜는 요청값(없으면 오늘)을 쓰고, 시간대는 현재 시각이 속한 3시간 슬롯을 쓴다.
+     */
+    private LocalDateTime resolveBaseTime(WildFireForecastRequest request) {
         LocalDateTime now = LocalDateTime.now();
-        int hour = now.getHour();                    // 19
-        int slotHour = (hour / 3) * 3;              // 18 (int끼리 나누면 자동 내림)
+        int slotHour = (now.getHour() / 3) * 3;     // 19시 -> 18시 (int끼리 나누면 자동 내림)
 
-        return now.toLocalDate().atTime(slotHour, 0);
+        if (!request.hasDate()) {
+            return now.toLocalDate().atTime(slotHour, 0);
+        }
+
+        try {
+            return LocalDate.of(
+                    Integer.parseInt(request.year()),
+                    Integer.parseInt(request.month()),
+                    Integer.parseInt(request.day())
+            ).atTime(slotHour, 0);
+        } catch (DateTimeException e) {
+            throw new CoreException(ErrorType.INVALID_PARAMETER);
+        }
     }
 
     private String createStartDate(String year, String month, String day, String hour) {
