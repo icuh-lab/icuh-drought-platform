@@ -796,9 +796,9 @@ Settings → Secrets and variables → Actions.
           echo "value=$TAG" >> "$GITHUB_OUTPUT"
           echo "배포 대상 태그: $TAG"
 
-      - name: Get GitHub Actions IP
+      - name: Get runner public IP
         id: ip
-        uses: haythem/public-ip@v1.2
+        run: echo "ipv4=$(curl -fsS --retry 3 https://api.ipify.org)" >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6

@@ -55,3 +55,127 @@ jobs:
             docker push "${base}:${SHA}"
             docker push "${base}:latest"
           done
+
+  deploy:
+    needs: [ build-and-push ]
+    # 롤백 실행(build 건너뜀)에서도 돌아야 하므로 always + 실패 판정을 명시한다.
+    if: always() && (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve image tag
+        id: tag
+        run: |
+          TAG="${{ inputs.image_tag }}"
+          if [ -z "$TAG" ]; then TAG="${{ github.sha }}"; fi
+          echo "value=$TAG" >> "$GITHUB_OUTPUT"
+          echo "배포 대상 태그: $TAG"
+
+      - name: Get runner public IP
+        id: ip
+        run: echo "ipv4=$(curl -fsS --retry 3 https://api.ipify.org)" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Open SSH port for this runner
+        run: |
+          aws ec2 authorize-security-group-ingress \
+            --group-id ${{ secrets.AWS_SG_ID }} \
+            --protocol tcp --port 22 \
+            --cidr ${{ steps.ip.outputs.ipv4 }}/32
+
+      - name: Write SSH key
+        run: |
+          echo "${{ secrets.SSH_EC2_KEY }}" > deploy_key.pem
+          chmod 400 deploy_key.pem
+
+      - name: Sync compose file
+        run: |
+          scp -i deploy_key.pem -o StrictHostKeyChecking=no \
+            deploy/docker-compose.yml \
+            ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }}:/opt/icuh/docker-compose.yml
+
+      # 토큰을 stdin으로 넘긴다. 명령줄에 실리지 않으므로 EC2의 ps/히스토리에 남지 않는다.
+      - name: Log in to GHCR on EC2
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | ssh -i deploy_key.pem -o StrictHostKeyChecking=no \
+            ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} \
+            'docker login ghcr.io -u ${{ github.actor }} --password-stdin'
+
+      - name: Pull and start
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          ssh -i deploy_key.pem -o StrictHostKeyChecking=no \
+            ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} \
+            "cd /opt/icuh && IMAGE_TAG=${IMAGE_TAG} docker compose pull && IMAGE_TAG=${IMAGE_TAG} docker compose up -d"
+
+      - name: Health check
+        id: health
+        continue-on-error: true
+        run: |
+          ssh -i deploy_key.pem -o StrictHostKeyChecking=no \
+            ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} bash -s <<'REMOTE'
+          set -u
+          for i in $(seq 1 30); do
+            if curl -fsS -m 3 localhost:8081/health >/dev/null \
+               && curl -fsS -m 3 localhost:8082/health >/dev/null \
+               && curl -fsS -m 3 localhost:8083/health >/dev/null; then
+              echo "3개 앱 모두 정상"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "헬스체크 실패 — 최근 로그"
+          cd /opt/icuh && docker compose logs --tail 50
+          exit 1
+          REMOTE
+
+      - name: Roll back on failed health check
+        if: steps.health.outcome == 'failure'
+        run: |
+          ssh -i deploy_key.pem -o StrictHostKeyChecking=no \
+            ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} bash -s <<'REMOTE'
+          set -eu
+          cd /opt/icuh
+          if [ ! -s .last-good ]; then
+            echo ".last-good이 없어 자동 롤백을 못 한다. 수동 확인이 필요하다."
+            exit 1
+          fi
+          PREV=$(cat .last-good)
+          echo "직전 성공 태그로 되돌린다: $PREV"
+          IMAGE_TAG="$PREV" docker compose up -d
+          REMOTE
+          echo "::error::헬스체크 실패로 롤백했다"
+          exit 1
+
+      - name: Record last-good tag
+        if: steps.health.outcome == 'success'
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          ssh -i deploy_key.pem -o StrictHostKeyChecking=no \
+            ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} \
+            "echo ${IMAGE_TAG} > /opt/icuh/.last-good && docker logout ghcr.io"
+
+      - name: Close SSH port
+        if: always()
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id ${{ secrets.AWS_SG_ID }} \
+            --protocol tcp --port 22 \
+            --cidr ${{ steps.ip.outputs.ipv4 }}/32
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f deploy_key.pem
