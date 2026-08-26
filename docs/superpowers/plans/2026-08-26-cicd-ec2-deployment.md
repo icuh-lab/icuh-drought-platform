@@ -671,10 +671,17 @@ Expected: 3개 이미지가 받아진다.
 
 - [ ] **Step 8: 구 컨테이너를 내리고 신 앱을 올린다**
 
-컨테이너 이름은 Step 1에서 확인한 실제 값을 쓴다. 아래는 이전 워크플로가 쓰던 이름이다.
+컨테이너 이름은 Step 4에서 설정한 `$OLD`를 그대로 쓴다 — 여기서 새로 적지 않는다(이름을 두 곳에
+따로 적으면 한쪽만 고치는 사고가 날 수 있어서다. `icuh_platform`은 이전 워크플로가 쓰던 이름을 그대로
+옮겨 적은 추측값이고, 실제 값은 Step 4에서 확정한다). `OLD`가 이 셸 세션에 남아 있지 않으면(재접속
+등으로 사라졌으면) 아래 첫 명령이 조용히 잘못된 이름으로 실행되는 대신 즉시 멈추고 안내 메시지를
+낸다 — 그 경우 Step 4의 `OLD=` 블록을 다시 실행한 뒤 여기로 돌아온다.
 
 ```bash
-docker stop icuh_platform && docker rm icuh_platform
+# Step 4에서 설정한 값을 그대로 쓴다. 재접속했다면 아래 명령이 멈추므로 Step 4를 다시 실행한다.
+: "${OLD:?Step 4의 OLD가 설정돼 있지 않다. 재접속했다면 Step 4를 다시 실행한다.}"
+
+docker stop "$OLD" && docker rm "$OLD"
 cd /opt/icuh && IMAGE_TAG=latest docker compose up -d
 docker compose ps
 ```
