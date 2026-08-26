@@ -105,9 +105,15 @@ swapon --show || echo "SWAP-NONE"
 `free -m`의 총 메모리는 한 군데 더 쓰인다. `deploy/docker-compose.yml`은 서비스마다 `mem_limit`을
 걸어 두었는데(public 768m / admin 512m / open 512m, 합계 1792m), 이 값은 인스턴스 크기를 모른 채
 정한 보수적인 기본값이다. **여기서 잰 총 메모리에서 OS·도커 몫(넉넉히 512m)을 뺀 값이 1792m보다
-작으면 compose의 `mem_limit`을 그에 맞게 줄여 커밋한 뒤 이 런북을 계속한다.** 한도를 아예 지우면
-안 된다 — Dockerfile의 `-XX:MaxRAMPercentage=70`이 한도가 없을 때 호스트 전체 메모리를 기준으로
-삼아 JVM 3개가 각각 70%를 잡는다.
+작으면 로컬 체크아웃에서 `deploy/docker-compose.yml`의 `mem_limit`을 그에 맞게 줄인다.** 한도를
+아예 지우면 안 된다 — Dockerfile의 `-XX:MaxRAMPercentage=70`이 한도가 없을 때 호스트 전체 메모리를
+기준으로 삼아 JVM 3개가 각각 70%를 잡는다.
+
+**고친 파일을 지금 커밋하지 않는다.** `main`에 푸시되는 순간 `Deploy`가 돌면서 아직 세팅이 끝나지
+않은 호스트를 향해 배포를 시도한다 — 맨 위 "실행 순서"가 "실패하는 것은 첫 실행 하나뿐"이라고
+약속한 것이 깨진다. 수정한 파일은 **Step 8의 `scp`로 호스트에 올려서** 이 런북 동안 쓰고, 커밋은
+Step 15에서 다른 결과와 함께 한 번에 한다. (Step 8의 `scp`는 로컬 작업 트리의 파일을 그대로
+올리므로, 커밋하지 않아도 방금 고친 값이 반영된다.)
 
 실행 결과:
 
@@ -227,6 +233,12 @@ docker images | grep icuh-platform
 성공이다. 이 이미지와 두 파일이 있으면 언제든 구 앱을 8081로 되돌릴 수 있다 (맨 위 "먼저 읽는다"
 절의 되돌리기 명령 참고).
 
+`icuh-platform:rollback`은 배포 워크플로가 도는 `docker image prune`에 지워지지 않는다 — 정리 대상이
+`label=re.kr.icuh.project=drought-platform`으로 한정돼 있고, 그 라벨은 이 파이프라인이 빌드한
+이미지에만 붙기 때문이다. (라벨 필터 없이 나이만 봤다면 Step 10의 `docker rm` 직후 참조가 끊긴
+이 이미지가 첫 배포에서 곧바로 지워졌을 것이다.) 다만 사람이 직접 `docker system prune -a` 같은
+명령을 실행하면 당연히 함께 지워지니, 롤백 가능성이 남아 있는 동안에는 그런 명령을 쓰지 않는다.
+
 실행 결과:
 
 ```
@@ -325,7 +337,8 @@ Step 10으로 넘어가기 전에 이 블록부터 다시 실행한다.
 
 - [ ] **Step 8: compose 파일을 배치하고 이미지를 미리 받아본다**
 
-로컬에서:
+로컬에서 — 커밋 여부와 무관하게 **작업 트리의 파일이 그대로 올라간다.** Step 1에서 `mem_limit`을
+줄였다면 그 값이 이 `scp`로 반영된다:
 
 ```bash
 scp -i <키> deploy/docker-compose.yml <user>@<host>:/opt/icuh/docker-compose.yml
@@ -536,15 +549,22 @@ GitHub → 이 저장소 → Settings → Secrets and variables → Actions:
 
 - [ ] **Step 15: 런북 결과를 커밋하고, Deploy를 수동 실행해 마무리한다**
 
+**이 런북에서 커밋하는 지점은 여기 하나뿐이다.** 중간에 커밋하면 `main` 푸시가 `Deploy`를 깨워
+아직 세팅 중인 호스트로 배포가 나간다. Step 1에서 `mem_limit`을 조정했다면 그 변경도 여기서 함께
+커밋한다(런북 동안에는 Step 8의 `scp`로만 반영돼 있었다).
+
 위 각 스텝의 "실행 결과" 슬롯을 모두 채운 뒤:
 
 ```bash
 git add deploy/RUNBOOK.md
+git add deploy/docker-compose.yml   # Step 1에서 mem_limit을 조정했을 때만
 git commit -m "docs: EC2 최초 세팅 런북과 실행 결과 기록"
 ```
 
 그리고 문서 맨 위 "실행 순서" 4번을 실행한다 — Actions → Deploy → Run workflow(`main`, `image_tag`
-비움). 이 실행이 끝까지 통과해야 파이프라인 전체가 실제로 동작한다는 것이 확인된다.
+비움). 이 실행이 끝까지 통과해야 파이프라인 전체가 실제로 동작한다는 것이 확인된다. (이 커밋을
+`main`에 푸시했다면 그 push로도 `Deploy`가 한 번 돈다 — 그 실행이 통과했다면 수동 실행은 생략해도
+된다.)
 
 > 이 문서를 저장소에 처음 추가하는 커밋(본 작업)은 위 절차를 아직 아무것도 실행하지 않은 상태로
 > 만들어졌으므로, "실행 결과" 슬롯이 비어 있다. 실제 EC2 세팅을 수행한 뒤 이 커밋 메시지로 결과를

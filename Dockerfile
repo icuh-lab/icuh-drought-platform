@@ -5,6 +5,11 @@ FROM eclipse-temurin:17-jre
 ARG MODULE
 WORKDIR /app
 
+# 이 파이프라인이 만든 이미지임을 표시한다. EC2의 배포 후 정리(deploy.yml의
+# docker image prune)가 이 라벨로 대상을 좁힌다 — 라벨이 없으면 나이만 보고 지우게 되어
+# 런북이 백업해 둔 icuh-platform:rollback(구 앱 복구 수단)까지 함께 지워진다.
+LABEL re.kr.icuh.project=drought-platform
+
 COPY ${MODULE}/build/libs/*-SNAPSHOT.jar app.jar
 
 # 힙 상한은 "컨테이너 메모리 한도의 70%"다. 한도가 걸려 있지 않으면 그 기준이 호스트 전체

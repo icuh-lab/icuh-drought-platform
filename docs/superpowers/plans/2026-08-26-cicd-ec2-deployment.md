@@ -127,6 +127,11 @@ FROM eclipse-temurin:17-jre
 ARG MODULE
 WORKDIR /app
 
+# 이 파이프라인이 만든 이미지임을 표시한다. EC2의 배포 후 정리(deploy.yml의
+# docker image prune)가 이 라벨로 대상을 좁힌다 — 라벨이 없으면 나이만 보고 지우게 되어
+# 런북이 백업해 둔 icuh-platform:rollback(구 앱 복구 수단)까지 함께 지워진다.
+LABEL re.kr.icuh.project=drought-platform
+
 COPY ${MODULE}/build/libs/*-SNAPSHOT.jar app.jar
 
 # 힙 상한은 "컨테이너 메모리 한도의 70%"다. 한도가 걸려 있지 않으면 그 기준이 호스트 전체
@@ -657,9 +662,13 @@ swapon --show || echo "SWAP-NONE"
 결과를 `deploy/RUNBOOK.md`에 붙여 넣는다. 특히 **메모리**를 확인한다. 총 1GB 인스턴스라면 JVM 3개가 동시에 뜨지 못한다 — 그 경우 Step 2에서 스왑을 먼저 만든다.
 
 `free -m`의 총 메모리는 compose의 `mem_limit`(합계 1792m)을 확정하는 근거이기도 하다. 총 메모리에서
-OS·도커 몫(넉넉히 512m)을 뺀 값이 1792m보다 작으면 `deploy/docker-compose.yml`의 `mem_limit`을 줄여
-커밋한 뒤 계속한다. 한도를 지우는 것은 답이 아니다 — Dockerfile의 `-XX:MaxRAMPercentage=70`이
+OS·도커 몫(넉넉히 512m)을 뺀 값이 1792m보다 작으면 로컬 체크아웃에서 `deploy/docker-compose.yml`의
+`mem_limit`을 줄인다. 한도를 지우는 것은 답이 아니다 — Dockerfile의 `-XX:MaxRAMPercentage=70`이
 한도 없을 때 호스트 전체를 기준으로 삼는다.
+
+**여기서 커밋하지 않는다.** `main`에 푸시되면 아직 세팅이 끝나지 않은 호스트로 `Deploy`가 나가서,
+"실행 순서"가 약속한 "실패하는 것은 첫 실행 하나뿐"이 깨진다. 고친 파일은 Step 8의 `scp`가 작업
+트리에서 그대로 올려 주므로 런북 동안 문제없이 쓰이고, 커밋은 Step 15에서 한 번에 한다.
 
 - [ ] **Step 2: (메모리가 2GB 미만일 때만) 스왑을 만든다**
 
@@ -735,6 +744,11 @@ docker images | grep icuh-platform
 `설정 백업 OK`·`환경변수 백업 OK`가 둘 다 나오고 `icuh-platform:rollback`이 보이면 성공이다. 이
 이미지와 두 파일이 있으면 언제든 구 앱을 8081로 되돌릴 수 있다.
 
+이 이미지는 배포 워크플로의 `docker image prune`에 지워지지 않는다 — 정리 대상이
+`label=re.kr.icuh.project=drought-platform`(Task 1의 Dockerfile `LABEL`)으로 한정돼 있기 때문이다.
+라벨 필터가 없다면 Step 10의 `docker rm` 직후 참조가 끊기고 생성 시각도 336h를 넘긴 이 이미지가
+첫 성공 배포에서 곧바로 지워졌을 것이다.
+
 - [ ] **Step 5: 배포 디렉터리를 만든다**
 
 ```bash
@@ -780,7 +794,8 @@ TAG=<그 40자 SHA>
 
 - [ ] **Step 8: compose 파일을 배치하고 이미지를 미리 받아본다**
 
-로컬에서:
+로컬에서 — 커밋 여부와 무관하게 작업 트리의 파일이 그대로 올라간다(Step 1에서 `mem_limit`을 줄였다면
+그 값이 여기서 반영된다):
 
 ```bash
 scp -i <키> deploy/docker-compose.yml <user>@<host>:/opt/icuh/docker-compose.yml
@@ -906,8 +921,11 @@ Task 6 Step 1과 같은 여섯 개다. 런북에도 넣는 이유: 운영자가 
 
 - [ ] **Step 15: 런북 결과를 커밋하고 Deploy를 수동 실행한다**
 
+**런북에서 커밋하는 지점은 여기 하나뿐이다.** Step 1의 `mem_limit` 조정도 여기서 함께 커밋한다.
+
 ```bash
 git add deploy/RUNBOOK.md
+git add deploy/docker-compose.yml   # Step 1에서 mem_limit을 조정했을 때만
 git commit -m "docs: EC2 최초 세팅 런북과 실행 결과 기록"
 ```
 
@@ -996,14 +1014,11 @@ concurrency:
             exit 1
           fi
 
-      # 롤백 실행일 때는 되돌릴 SHA의 compose 파일을 써야 한다. HEAD를 체크아웃하면
-      # 그 사이 compose가 바뀐 경우 옛 이미지에 새 compose를 섞어 배포하게 된다.
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.image_tag || github.sha }}
-
       # 태그는 아래에서 원격 셸 명령 문자열에 그대로 끼워 넣는다. 40자 커밋 SHA만
       # 허용해 오타 배포와 명령 주입을 함께 막는다.
+      # checkout **앞에** 둔다. checkout이 같은 값을 ref로 받으므로, 뒤에 두면 잘못된
+      # 태그가 여기까지 오지 못하고 checkout 안에서 git 오류로 죽어 아래 ::error:: 메시지가
+      # 끝내 보이지 않는다. 이 스텝은 inputs.image_tag만 읽어서 저장소가 필요 없다.
       - name: Resolve image tag
         id: tag
         env:
@@ -1014,6 +1029,12 @@ concurrency:
           [[ "$TAG" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::image_tag는 40자 커밋 SHA여야 한다"; exit 1; }
           echo "value=$TAG" >> "$GITHUB_OUTPUT"
           echo "배포 대상 태그: $TAG"
+
+      # 롤백 실행일 때는 되돌릴 SHA의 compose 파일을 써야 한다. HEAD를 체크아웃하면
+      # 그 사이 compose가 바뀐 경우 옛 이미지에 새 compose를 섞어 배포하게 된다.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.tag.outputs.value }}
 
       - name: Get runner public IP
         id: ip
@@ -1140,8 +1161,16 @@ concurrency:
 
       # 배포마다 모듈당 이미지가 하나씩 쌓이는데, 디스크 여유는 런북 Step 1에서 한 번
       # 볼 뿐이다. 2주(336h)보다 오래된 미사용 이미지를 정리해 디스크가 조용히 차는 것을
-      # 막는다. 롤백 대상인 직전 성공 이미지는 컨테이너가 참조 중이거나 최근 것이라
-      # 이 필터에 걸리지 않는다. 정리 실패가 배포 성공을 뒤집을 이유는 없으므로 || true.
+      # 막는다.
+      #
+      # label 필터가 안전장치의 핵심이다. 나이만 보고 지우면 런북 Step 4가 백업해 둔
+      # icuh-platform:rollback — 구 앱을 8081로 되돌릴 유일한 수단 — 이 함께 지워진다.
+      # 그 이미지는 Step 10의 docker rm 이후 아무 컨테이너도 참조하지 않고, 생성 시각은
+      # 구 앱의 빌드 시점이라 336h를 한참 넘긴 상태이기 때문이다.
+      # "직전 성공 이미지는 최근 것이라 안전하다"는 논리에 기대지 않는다 — 배포 간격이
+      # 2주를 넘기면 그 전제가 깨진다. 이 파이프라인이 만든 이미지에만 Dockerfile의
+      # LABEL re.kr.icuh.project=drought-platform이 붙어 있고, 정리 대상을 그것으로 한정한다.
+      # 정리 실패가 배포 성공을 뒤집을 이유는 없으므로 || true.
       - name: Record last-good tag
         if: steps.health.outcome == 'success'
         env:
@@ -1149,7 +1178,7 @@ concurrency:
         run: |
           ssh -i deploy_key.pem -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=8 -o BatchMode=yes \
             ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} \
-            "echo ${IMAGE_TAG} > /opt/icuh/.last-good && (docker image prune -af --filter \"until=336h\" || true)"
+            "echo ${IMAGE_TAG} > /opt/icuh/.last-good && (docker image prune -af --filter \"until=336h\" --filter \"label=re.kr.icuh.project=drought-platform\" || true)"
 
       # 이 스텝은 반드시 롤백 스텝 **뒤에** 온다. 롤백의 docker compose pull은 EC2의
       # docker 세션이 아직 GHCR에 로그인돼 있어야 성공하기 때문이다 — 이 로그아웃을
@@ -1166,12 +1195,19 @@ concurrency:
             'docker logout ghcr.io' \
             || echo "::warning::EC2 GHCR 로그아웃에 실패했다 — 호스트의 ~/.docker/config.json을 직접 확인한다"
 
-      # authorize가 실제로 성공했을 때만 revoke한다. conclusion != 'skipped'로 두면
-      # 그 앞(가드·태그 검증·IP 조회)에서 멈춘 실행에서도 — 규칙을 연 적이 없고 AWS
-      # 자격증명도 없는 상태에서 — revoke를 5회 시도하다 실패해, 원래의 실패 원인을
-      # 가리는 두 번째 에러를 덧씌운다.
+      # Open SSH port가 **실제로 실행됐을 때만** revoke한다. 두 가지를 동시에 만족해야 한다.
+      #  (a) 그 앞(가드·태그 검증·IP 조회)에서 멈춰 규칙을 연 적도 AWS 자격증명도 없는
+      #      실행에서는 돌면 안 된다 — revoke를 5회 시도하다 실패해 원래 실패 원인을
+      #      가리는 두 번째 에러를 덧씌운다.
+      #  (b) authorize가 실패한 실행에서는 **반드시** 돌아야 한다 — 앞선 실행의 revoke가
+      #      실패해 남은 규칙 때문에 InvalidPermission.Duplicate로 실패하는 경우가 있고,
+      #      그때 닫지 않으면 GitHub가 러너 간에 재사용하는 IP에 22번이 열린 채 남는다.
+      # 부정(!= 'skipped')이 아니라 명시적 논리합으로 쓴 이유: 실행되지 않은 스텝의
+      # outcome이 null인지 'skipped'인지는 러너에서 확인해 볼 방법이 없다. 이 형태는 두
+      # 해석 모두에서 옳다 — null도 'skipped'도 양쪽 비교가 거짓이고, 'success'와
+      # 'failure'만 참이 된다. 짧아 보인다고 부정형으로 되돌리지 않는다.
       - name: Close SSH port
-        if: always() && steps.open.outcome == 'success'
+        if: always() && (steps.open.outcome == 'success' || steps.open.outcome == 'failure')
         run: |
           for i in 1 2 3 4 5; do
             if aws ec2 revoke-security-group-ingress \
