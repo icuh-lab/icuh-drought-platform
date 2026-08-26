@@ -203,17 +203,21 @@ PATCH  /api/v1/articles/{id}   → Article.updateContent()              (pending
 
 ### 5.2 설정 파일 — 이게 없으면 앱이 뜨지 않습니다
 
-`src/main/resources/`의 설정 파일 중 **2개는 git에 없습니다.** 팀에서 따로 받아야 합니다.
+`src/main/resources/`의 설정 파일은 **모두 git에 있습니다.** 값이 전부 환경변수 자리표시자라
+따로 받을 파일은 없고, 대신 아래 환경변수를 채워야 합니다.
 
 | 파일 | git | 비고 |
 |---|---|---|
 | `application.yml` | ✅ 추적됨 | 기본 프로필 `local`, `secret`을 항상 include |
 | `application-local.yml` | ✅ 추적됨 | 환경변수 참조만 있고 실제 값은 없음 |
 | `logging.yml` | ✅ 추적됨 | 프로필별 logback 설정을 가리킴 |
-| **`application-secret.yml`** | ❌ **gitignore** | **팀에서 받으세요** (AWS 자격증명) |
-| **`application-prod.yml`** | ❌ **gitignore** | 배포용 |
+| `application-secret.yml` | ✅ 추적됨 | AWS S3 설정. `${...}` 자리표시자만 있음 |
+| `application-prod.yml` | ✅ 추적됨 | 배포용. `${...}` 자리표시자만 있음 |
 
-> 🔒 이 두 파일은 절대 커밋하지 마세요. `git add -f`로 강제 추가하지 않습니다.
+> 🔒 이 파일들에 **리터럴 값을 적지 마세요.** 자격증명·DB 접속 정보는 환경변수로만 넣습니다
+> (운영 값은 EC2의 `/opt/icuh/.env.<name>`에만 있습니다). 예전에는 두 파일이 `.gitignore`
+> 대상이었지만, 값이 전부 환경변수로 옮겨진 뒤에도 무시 규칙만 남아 CI가 만든 이미지에 설정
+> 파일이 빠지는 문제가 있어 추적으로 되돌렸습니다.
 
 **필요한 환경변수** (`application-local.yml`이 참조):
 
