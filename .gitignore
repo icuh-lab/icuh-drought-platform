@@ -15,3 +15,6 @@ out/
 
 application-private.yml
 application-secret-local.yml
+
+# 서브에이전트 실행 작업공간 (스크래치)
+.superpowers/
