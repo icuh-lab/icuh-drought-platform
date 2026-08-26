@@ -1,0 +1,57 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: '되돌릴 커밋 SHA. 비우면 현재 커밋으로 배포한다.'
+        required: false
+        type: string
+
+jobs:
+  build-and-push:
+    # 롤백 실행일 때는 이미 올라간 이미지를 쓰므로 빌드를 건너뛴다.
+    if: github.event_name == 'push' || inputs.image_tag == ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      # 한 번만 돌린다. 3개 모듈의 jar가 모두 나온다.
+      - name: Build and test
+        run: ./gradlew build --console=plain
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # jar 복사뿐이라 순차 빌드로도 수 초다. 매트릭스로 나누면 러너마다 gradle 빌드를 반복해 더 느려진다.
+      - name: Build and push images
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for m in public-api admin-api open-api; do
+            base="ghcr.io/icuh-lab/icuh-drought-platform/${m}"
+            docker build --build-arg "MODULE=${m}" \
+              -t "${base}:${SHA}" -t "${base}:latest" .
+            docker push "${base}:${SHA}"
+            docker push "${base}:latest"
+          done
