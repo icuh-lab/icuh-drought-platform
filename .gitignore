@@ -15,3 +15,10 @@ out/
 
 application-private.yml
 application-secret-local.yml
+
+# EC2 배포용 실제 env 파일. 템플릿(.example)만 커밋한다.
+deploy/.env*
+!deploy/.env*.example
+
+# 서브에이전트 실행 작업공간 (스크래치)
+.superpowers/

@@ -1,0 +1,33 @@
+server:
+  port: ${PUBLIC_SERVER_PORT:8081}
+
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${PUBLIC_PROD_DB_URL:${PROD_DB_URL}}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${PUBLIC_PROD_DB_USERNAME:${PROD_DB_USERNAME}}
+    password: ${PUBLIC_PROD_DB_PASSWORD:${PROD_DB_PASSWORD}}
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+cors:
+  allowed:
+    origins: ${PUBLIC_CORS_ALLOWED_ORIGINS:${CORS_ALLOWED_ORIGINS}}
+
+logging:
+  config: ${PUBLIC_LOGGING_CONFIG:classpath:logback/logback-prod.xml}

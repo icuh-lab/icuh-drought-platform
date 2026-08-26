@@ -1,0 +1,43 @@
+# EC2 /opt/icuh/docker-compose.yml 로 배치된다.
+# IMAGE_TAG만 배포 시점에 셸 환경변수로 주입받고, 앱 환경변수는 같은 디렉터리의 서비스별 .env.<name>에서 읽는다.
+# .env를 세 컨테이너가 공유하면 admin-api 전용 시크릿이 인터넷에 노출된 public-api/open-api에도 실린다.
+# 서비스별로 분리해 그 경로를 막는다.
+#
+# mem_limit이 왜 반드시 있어야 하나: Dockerfile의 -XX:MaxRAMPercentage=70은 "컨테이너 한도의 70%"를
+# 힙으로 잡는데, 한도가 없으면 JVM은 호스트 전체 메모리를 자기 몫으로 본다 — 세 컨테이너가 각각
+# 호스트의 70%를 잡아 210% 과다배정이 되고, 먼저 힙을 늘린 프로세스가 나머지를 OOM으로 밀어낸다.
+# 아래 값은 인스턴스 크기를 모른 채 정한 보수적인 기본값이다(합계 1792m). **실제 인스턴스 메모리에
+# 맞춰 반드시 조정한다** — 런북 Step 1의 `free -m`이 그 값을 재는 지점이고, 총합이 물리 메모리에서
+# OS/도커 몫(넉넉히 512m)을 뺀 값을 넘지 않아야 한다.
+
+services:
+  public-api:
+    image: ghcr.io/icuh-lab/icuh-drought-platform/public-api:${IMAGE_TAG}
+    container_name: icuh-public-api
+    env_file: .env.public
+    # 셋 중 유일하게 외부 트래픽과 S3 멀티파트 업로드를 받는다 — 여유를 더 준다.
+    mem_limit: 768m
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./logs/public:/root/log/spring
+    restart: unless-stopped
+
+  admin-api:
+    image: ghcr.io/icuh-lab/icuh-drought-platform/admin-api:${IMAGE_TAG}
+    container_name: icuh-admin-api
+    env_file: .env.admin
+    mem_limit: 512m
+    # 인증이 없는 앱이다. 호스트 루프백에만 바인딩해 외부에서 직접 닿지 못하게 한다.
+    ports:
+      - "127.0.0.1:8082:8082"
+    restart: unless-stopped
+
+  open-api:
+    image: ghcr.io/icuh-lab/icuh-drought-platform/open-api:${IMAGE_TAG}
+    container_name: icuh-open-api
+    env_file: .env.open
+    mem_limit: 512m
+    ports:
+      - "8083:8083"
+    restart: unless-stopped

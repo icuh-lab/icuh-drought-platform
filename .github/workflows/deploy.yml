@@ -1,0 +1,312 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: '되돌릴 커밋 SHA. 비우면 현재 커밋으로 배포한다.'
+        required: false
+        type: string
+
+# 연이은 실행이 같은 EC2 보안그룹 규칙을 두고 경쟁하지 않도록 전체 워크플로를 직렬화한다.
+# cancel-in-progress는 켜지 않는다 — Close SSH port는 always()라 취소돼도 22번
+# 포트 자체는 대개 닫힌다. 진짜 문제는 deploy job의 !cancelled()다: 이미 실행
+# 중인 job은 취소돼도 그 조건을 다시 평가하지 않으므로, 한창 배포/롤백 중인
+# job이 강제로 끊길 수 있다 — !cancelled()가 이를 막아 준다고 오해하면 안 된다.
+concurrency:
+  group: deploy-ec2
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    # 롤백 실행일 때는 이미 올라간 이미지를 쓰므로 빌드를 건너뛴다.
+    if: github.event_name == 'push' || inputs.image_tag == ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      # 한 번만 돌린다. 3개 모듈의 jar가 모두 나온다.
+      - name: Build and test
+        run: ./gradlew build --console=plain
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # jar 복사뿐이라 순차 빌드로도 수 초다. 매트릭스로 나누면 러너마다 gradle 빌드를 반복해 더 느려진다.
+      - name: Build and push images
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for m in public-api admin-api open-api; do
+            base="ghcr.io/icuh-lab/icuh-drought-platform/${m}"
+            docker build --build-arg "MODULE=${m}" \
+              -t "${base}:${SHA}" -t "${base}:latest" .
+            docker push "${base}:${SHA}"
+            docker push "${base}:latest"
+          done
+
+  deploy:
+    needs: [ build-and-push ]
+    # 롤백 실행(build 건너뜀)에서도 돌아야 하므로 always 대신 !cancelled()를 쓴다.
+    # always()는 취소 상태까지 무시해 build-and-push 성공 직후 취소된 실행에서도
+    # 배포를 강행해 버린다.
+    if: ${{ !cancelled() && (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    # timeout-minutes 산정 근거: 설정(체크아웃~SSH 준비, 각 스텝 수십 초) +
+    # pull/up(수 분) + 헬스체크 루프(데드라인 240초 상한) + 롤백 pull/up(수 분) +
+    # 롤백 헬스체크 루프(데드라인 240초 상한)를 다 더해도 20분 안팎이다.
+    # 25분은 그 위에 여유를 둔 값이다 — 루프의 deadline(현재 240초)을 바꾸면
+    # 이 숫자도 다시 계산해야 한다.
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      # 첫 스텝이다. AWS 자격증명·보안그룹·SSH 키를 건드리기 전에 막는다.
+      # workflow_dispatch는 어떤 브랜치에서도 실행할 수 있어서, image_tag를 비운 채
+      # 기능 브랜치에서 실행하면 그 브랜치를 빌드해 운영 EC2에 올려 버린다.
+      # main이 아닌 ref에서는 되돌릴 대상 SHA(image_tag)를 명시했을 때만 허용한다.
+      # push 트리거는 main 한정이라 늘 통과한다.
+      - name: Guard against deploying a non-main ref
+        env:
+          REF: ${{ github.ref }}
+          RAW_TAG: ${{ inputs.image_tag }}
+        run: |
+          if [ "$REF" != "refs/heads/main" ] && [ -z "$RAW_TAG" ]; then
+            echo "::error::main이 아닌 ref($REF)에서 image_tag 없이 배포할 수 없다. 롤백이라면 되돌릴 커밋 SHA를 image_tag에 넣고, 배포라면 main에서 실행한다."
+            exit 1
+          fi
+
+      # 태그는 아래에서 원격 셸 명령 문자열에 그대로 끼워 넣는다. 40자 커밋 SHA만
+      # 허용해 오타 배포와 명령 주입을 함께 막는다.
+      # checkout **앞에** 둔다. checkout이 같은 값을 ref로 받으므로, 뒤에 두면 잘못된
+      # 태그가 여기까지 오지 못하고 checkout 안에서 git 오류로 죽어 아래 ::error:: 메시지가
+      # 끝내 보이지 않는다. 이 스텝은 inputs.image_tag만 읽어서 저장소가 필요 없다.
+      - name: Resolve image tag
+        id: tag
+        env:
+          RAW_TAG: ${{ inputs.image_tag }}
+        run: |
+          TAG="$RAW_TAG"
+          if [ -z "$TAG" ]; then TAG="${{ github.sha }}"; fi
+          [[ "$TAG" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::image_tag는 40자 커밋 SHA여야 한다"; exit 1; }
+          echo "value=$TAG" >> "$GITHUB_OUTPUT"
+          echo "배포 대상 태그: $TAG"
+
+      # 롤백 실행일 때는 되돌릴 SHA의 compose 파일을 써야 한다. HEAD를 체크아웃하면
+      # 그 사이 compose가 바뀐 경우 옛 이미지에 새 compose를 섞어 배포하게 된다.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.tag.outputs.value }}
+
+      - name: Get runner public IP
+        id: ip
+        run: |
+          IP=$(curl -fsS --retry 3 --retry-all-errors --connect-timeout 5 --max-time 15 https://api.ipify.org)
+          [[ "$IP" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || { echo "::error::공인 IP 조회 실패: '$IP'"; exit 1; }
+          echo "ipv4=$IP" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+
+      - name: Open SSH port for this runner
+        id: open
+        run: |
+          aws ec2 authorize-security-group-ingress \
+            --group-id ${{ secrets.AWS_SG_ID }} \
+            --protocol tcp --port 22 \
+            --cidr ${{ steps.ip.outputs.ipv4 }}/32
+
+      - name: Write SSH key
+        run: |
+          echo "${{ secrets.SSH_EC2_KEY }}" > deploy_key.pem
+          chmod 400 deploy_key.pem
+
+      - name: Sync compose file
+        run: |
+          scp -i deploy_key.pem -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=8 -o BatchMode=yes \
+            deploy/docker-compose.yml \
+            ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }}:/opt/icuh/docker-compose.yml
+
+      # 토큰을 stdin으로 넘긴다. 명령줄에 실리지 않으므로 EC2의 ps/히스토리에 남지 않는다.
+      - name: Log in to GHCR on EC2
+        id: ghcr_login
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | ssh -i deploy_key.pem -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=8 -o BatchMode=yes \
+            ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} \
+            'docker login ghcr.io -u ${{ github.actor }} --password-stdin'
+
+      - name: Pull and start
+        id: deploy
+        continue-on-error: true
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          ssh -i deploy_key.pem -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=8 -o BatchMode=yes \
+            ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} \
+            "cd /opt/icuh && IMAGE_TAG=${IMAGE_TAG} docker compose pull && IMAGE_TAG=${IMAGE_TAG} docker compose up -d --remove-orphans"
+
+      - name: Health check
+        id: health
+        continue-on-error: true
+        run: |
+          ssh -i deploy_key.pem -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=8 -o BatchMode=yes \
+            ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} bash -s <<'REMOTE'
+          set -u
+          deadline=$(( $(date +%s) + 240 ))
+          ok=0
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            if curl -fsS -m 3 localhost:8081/health >/dev/null \
+               && curl -fsS -m 3 localhost:8082/health >/dev/null \
+               && curl -fsS -m 3 localhost:8083/health >/dev/null; then
+              ok=1
+              break
+            fi
+            sleep 5
+          done
+          if [ "$ok" -eq 1 ]; then
+            echo "3개 앱 모두 정상"
+            exit 0
+          fi
+          echo "헬스체크 실패 — 최근 로그"
+          cd /opt/icuh && docker compose logs --tail 200
+          exit 1
+          REMOTE
+
+      - name: Roll back failed deployment
+        if: steps.deploy.outcome == 'failure' || steps.health.outcome == 'failure'
+        run: |
+          ROLLBACK_OK=1
+          ssh -i deploy_key.pem -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=8 -o BatchMode=yes \
+            ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} bash -s <<'REMOTE' || ROLLBACK_OK=0
+          set -eu
+          cd /opt/icuh
+          if [ ! -s .last-good ]; then
+            echo ".last-good이 없거나 비어 있어 자동 롤백을 못 한다. 수동 확인이 필요하다."
+            exit 1
+          fi
+          PREV=$(cat .last-good)
+          echo "직전 성공 태그로 되돌린다: $PREV"
+          if ! IMAGE_TAG="$PREV" docker compose pull; then
+            echo "롤백 대상 이미지(${PREV}) pull 실패 — 수동 개입 필요"
+            exit 1
+          fi
+          IMAGE_TAG="$PREV" docker compose up -d --remove-orphans
+          deadline=$(( $(date +%s) + 240 ))
+          ok=0
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            if curl -fsS -m 3 localhost:8081/health >/dev/null \
+               && curl -fsS -m 3 localhost:8082/health >/dev/null \
+               && curl -fsS -m 3 localhost:8083/health >/dev/null; then
+              ok=1
+              break
+            fi
+            sleep 5
+          done
+          if [ "$ok" -eq 1 ]; then
+            echo "롤백 후 정상 확인"
+            exit 0
+          fi
+          echo "롤백했으나 헬스체크 여전히 실패 — 수동 개입 필요"
+          docker compose logs --tail 200
+          exit 1
+          REMOTE
+          if [ "$ROLLBACK_OK" -eq 1 ]; then
+            echo "::error::배포 실패로 직전 성공 태그로 롤백했고, 롤백 후 헬스체크는 통과했다."
+          else
+            echo "::error::배포 실패 후 롤백도 정상화되지 않았다. 수동 개입이 필요하다."
+          fi
+          exit 1
+
+      # 배포마다 모듈당 이미지가 하나씩 쌓이는데, 디스크 여유는 런북 Step 1에서 한 번
+      # 볼 뿐이다. 2주(336h)보다 오래된 미사용 이미지를 정리해 디스크가 조용히 차는 것을
+      # 막는다.
+      #
+      # label 필터가 안전장치의 핵심이다. 나이만 보고 지우면 런북 Step 4가 백업해 둔
+      # icuh-platform:rollback — 구 앱을 8081로 되돌릴 유일한 수단 — 이 함께 지워진다.
+      # 그 이미지는 Step 10의 docker rm 이후 아무 컨테이너도 참조하지 않고, 생성 시각은
+      # 구 앱의 빌드 시점이라 336h를 한참 넘긴 상태이기 때문이다.
+      # "직전 성공 이미지는 최근 것이라 안전하다"는 논리에 기대지 않는다 — 배포 간격이
+      # 2주를 넘기면 그 전제가 깨진다. 이 파이프라인이 만든 이미지에만 Dockerfile의
+      # LABEL re.kr.icuh.project=drought-platform이 붙어 있고, 정리 대상을 그것으로 한정한다.
+      # 정리 실패가 배포 성공을 뒤집을 이유는 없으므로 || true.
+      - name: Record last-good tag
+        if: steps.health.outcome == 'success'
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+        run: |
+          ssh -i deploy_key.pem -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=8 -o BatchMode=yes \
+            ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} \
+            "echo ${IMAGE_TAG} > /opt/icuh/.last-good && (docker image prune -af --filter \"until=336h\" --filter \"label=re.kr.icuh.project=drought-platform\" || true)"
+
+      # 이 스텝은 반드시 롤백 스텝 **뒤에** 온다. 롤백의 docker compose pull은 EC2의
+      # docker 세션이 아직 GHCR에 로그인돼 있어야 성공하기 때문이다 — 이 로그아웃을
+      # 롤백보다 앞으로 옮기면 롤백 pull이 인증 실패로 깨진다.
+      # 성공 스텝(Record last-good tag)에 묶어 두면 실패한 배포에서는 GHCR 토큰이
+      # 호스트의 ~/.docker/config.json에 그대로 남는다. 그래서 always()로 분리했다.
+      # 조건이 ghcr_login 성공인 이유: 로그인 자체가 안 된 실행에서는 지울 토큰도 없고,
+      # 그 시점엔 deploy_key.pem/호스트 접근이 아직 성립하지 않을 수 있다.
+      - name: Log out of GHCR on EC2
+        if: always() && steps.ghcr_login.outcome == 'success'
+        run: |
+          ssh -i deploy_key.pem -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=8 -o BatchMode=yes \
+            ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} \
+            'docker logout ghcr.io' \
+            || echo "::warning::EC2 GHCR 로그아웃에 실패했다 — 호스트의 ~/.docker/config.json을 직접 확인한다"
+
+      # Open SSH port가 **실제로 실행됐을 때만** revoke한다. 두 가지를 동시에 만족해야 한다.
+      #  (a) 그 앞(가드·태그 검증·IP 조회)에서 멈춰 규칙을 연 적도 AWS 자격증명도 없는
+      #      실행에서는 돌면 안 된다 — revoke를 5회 시도하다 실패해 원래 실패 원인을
+      #      가리는 두 번째 에러를 덧씌운다.
+      #  (b) authorize가 실패한 실행에서는 **반드시** 돌아야 한다 — 앞선 실행의 revoke가
+      #      실패해 남은 규칙 때문에 InvalidPermission.Duplicate로 실패하는 경우가 있고,
+      #      그때 닫지 않으면 GitHub가 러너 간에 재사용하는 IP에 22번이 열린 채 남는다.
+      # 부정(!= 'skipped')이 아니라 명시적 논리합으로 쓴 이유: 실행되지 않은 스텝의
+      # outcome이 null인지 'skipped'인지는 러너에서 확인해 볼 방법이 없다. 이 형태는 두
+      # 해석 모두에서 옳다 — null도 'skipped'도 양쪽 비교가 거짓이고, 'success'와
+      # 'failure'만 참이 된다. 짧아 보인다고 부정형으로 되돌리지 않는다.
+      - name: Close SSH port
+        if: always() && (steps.open.outcome == 'success' || steps.open.outcome == 'failure')
+        run: |
+          for i in 1 2 3 4 5; do
+            if aws ec2 revoke-security-group-ingress \
+              --group-id ${{ secrets.AWS_SG_ID }} \
+              --protocol tcp --port 22 \
+              --cidr ${{ steps.ip.outputs.ipv4 }}/32; then
+              echo "22번 포트 규칙 제거 완료"
+              exit 0
+            fi
+            echo "revoke 실패 (시도 ${i}/5)"
+            [ "$i" -lt 5 ] && sleep 5
+          done
+          echo "::error::22번 포트 규칙 제거에 5회 모두 실패했다 — 수동으로 보안그룹을 확인해야 한다"
+          exit 1
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f deploy_key.pem

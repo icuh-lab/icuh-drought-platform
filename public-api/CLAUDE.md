@@ -33,7 +33,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 실행 전 필수 설정
 
 - **프로필**: `application.yml`에서 `local`이 기본, `secret`이 항상 include 된다. `prod`는 배포 시 `SPRING_PROFILES_ACTIVE=prod`로 활성화.
-- **git-ignored 설정 파일**: `application-secret.yml`, `application-prod.yml`은 커밋되지 않는다. 로컬 실행하려면 이 파일들 또는 그에 대응하는 환경변수가 필요하다.
+- **설정 파일**: `application-secret.yml`, `application-prod.yml`은 **커밋되어 있다** — 값이 전부 `${...}` 환경변수 자리표시자라서 커밋해도 안전하고, CI가 만드는 이미지에 들어가려면 추적되어야 한다. 로컬/운영 실행에는 그 자리표시자에 대응하는 환경변수가 필요하다.
 - **로컬 환경변수**: `LOCAL_DB_URL`, `LOCAL_DB_USERNAME`, `LOCAL_DB_PASSWORD`, `CORS_ALLOWED_ORIGINS`, 그리고 S3용 `spring.cloud.aws.*` 자격증명.
 - **`ddl-auto: none`** — 스키마를 자동 생성하지 않는다. DB 테이블은 외부에서 관리되므로, 엔티티 필드/테이블을 바꾸면 실제 스키마도 수동으로 맞춰야 한다.
 
@@ -128,7 +128,7 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 17)
 - QueryDSL에서 연관 엔티티는 `fetchJoin`으로 N+1을 막되, **`@OneToMany` 컬렉션(예: `Article.files`)은 페이징 쿼리에서 `fetchJoin`하지 않는다** — Hibernate가 메모리 페이징으로 전환되어 성능이 붕괴한다. 컬렉션은 batch size 또는 별도 조회로 처리한다.
 
 ### 시크릿·외부 연동
-- `application-secret.yml`·`application-prod.yml`은 로컬에 실존하지만 **`.gitignore` 대상**이다. 내용을 출력·로그·커밋하지 않고 `git add -f`로 강제 추가하지 않으며, 자격증명을 코드에 하드코딩하지 않는다.
+- `application-secret.yml`·`application-prod.yml`은 **추적되는 파일이지만, 값은 반드시 `${...}` 환경변수 자리표시자로만 둔다.** 리터럴 자격증명(DB 비밀번호, AWS 키, 버킷 이름 등)을 이 파일이나 다른 코드에 하드코딩하지 않는다 — 실제 값은 EC2의 `/opt/icuh/.env.<name>`(600)에만 존재한다. 자리표시자가 아닌 값을 넣어야 할 상황이면 커밋하지 말고 사용자에게 먼저 알린다.
 - S3 연동은 **AWS SDK v1(`com.amazonaws.*`)** 을 쓴다. 새 S3 코드는 기존 `AmazonS3Client`에 맞추고, v2 혼용이나 마이그레이션은 사용자 합의 후에만 진행한다.
 
 ### 응답 규약

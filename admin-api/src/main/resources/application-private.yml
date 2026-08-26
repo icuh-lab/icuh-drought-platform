@@ -1,0 +1,16 @@
+# AWS S3 Configure
+spring:
+  config:
+    activate:
+      on-profile: local | prod
+  cloud:
+    aws:
+      s3:
+        bucket: ${ADMIN_S3_BUCKET_NAME}
+      stack:
+        auto: false
+      region:
+        static: ${ADMIN_AWS_REGION:ap-northeast-2}
+      credentials:
+        access-key: ${ADMIN_AWS_ACCESS_KEY_ID}
+        secret-key: ${ADMIN_AWS_SECRET_ACCESS_KEY}
