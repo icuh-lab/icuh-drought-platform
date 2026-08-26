@@ -20,18 +20,23 @@ EC2 한 대에 `public-api`(8081) · `admin-api`(8082) · `open-api`(8083) 세 �
 이 런북에서 절대 놓치면 안 되는 세 가지다.
 
 1. **Step 8은 파괴적이다.** 8081에서 지금 서비스 중인 구 컨테이너를 멈추고 제거한다. **Step 4에서
-   구 이미지를 `icuh-platform:rollback`으로 태그해 두는 것이 Step 8을 되돌릴 수 있게 만드는 유일한
-   장치다.** Step 4를 건너뛰거나 실패한 채로 Step 8을 실행하지 않는다.
+   구 이미지를 `icuh-platform:rollback`으로 태그하고, 컨테이너의 실행 설정(환경변수·포트·볼륨)을
+   `/opt/icuh/old-container-inspect.json` · `/opt/icuh/old-container-env.txt`로 남겨 두는 것이
+   Step 8을 되돌릴 수 있게 만드는 유일한 장치다.** 이미지 태그만으로는 부족하다 — `docker rm`이
+   구 컨테이너의 실행 설정까지 함께 지우기 때문이다. Step 4를 건너뛰거나 실패한 채로 Step 8을
+   실행하지 않는다.
 2. **되돌리는 명령 (Step 9에 나오는 것과 동일, 당황했을 때 바로 쓰라고 여기 다시 적는다):**
 
    ```bash
    docker compose down && docker run -d --name icuh_platform -p 8081:8081 icuh-platform:rollback
    ```
 
-   원래 실행 옵션(환경변수 등)은 참고용으로 `public-api/.github/workflows/cicd.yml`의 `Deploy to EC2`
-   스텝에 남아 있다. (브리프 원문은 이 파일을 `icuh-platform/.github/workflows/cicd.yml`로 가리키는데,
-   현재 저장소에는 그 경로가 없다 — 멀티모듈 통합 전 구 저장소의 워크플로가 `public-api/` 아래로
-   들어와 있다. 아래 "브리프와 저장소가 어긋나는 부분" 참고.)
+   이 명령은 최소 기동만 한다. 원래 포트/환경변수/볼륨 옵션은 Step 4에서 남긴
+   `/opt/icuh/old-container-inspect.json` · `/opt/icuh/old-container-env.txt`를 보고 `docker run`
+   옵션에 반영한다(`old-container-env.txt`에는 평문 시크릿이 들어 있다 — Step 4 설명 참고). 두 파일이
+   없거나 유실됐다면 참고용으로 `public-api/.github/workflows/cicd.yml`의 `Deploy to EC2` 스텝에도
+   동일한 실행 옵션이 남아 있다(이 저장소로 옮겨 오기 전 구 저장소의 워크플로 파일과 바이트 단위로
+   동일함을 확인했다). 아래 "브리프와 저장소가 어긋나는 부분" 참고.
 3. **Step 8의 컨테이너 이름 `icuh_platform`은 추측이다.** 이전 프로젝트의 워크플로가 쓰던 이름을
    그대로 적어 둔 것뿐이다. **Step 8을 실행하기 전, 반드시 Step 1에서 직접 확인한 `docker ps -a`
    결과의 실제 이름을 쓴다.** 이름이 다르면 아래 명령의 `icuh_platform`을 그 값으로 바꿔서 실행한다.
@@ -115,9 +120,22 @@ docker compose version
 
 ```
 
-- [ ] **Step 4: 구 앱 이미지를 백업한다 (되돌릴 수 있게)**
+- [ ] **Step 4: 구 앱 이미지와 실행 설정을 백업한다 (되돌릴 수 있게)**
 
 **이 스텝이 Step 8을 되돌릴 수 있게 만드는 유일한 장치다. 건너뛰지 않는다.**
+
+백업 파일을 쓸 자리가 있어야 한다. Step 5가 `/opt/icuh/logs/public`까지 포함해 배포 디렉터리를
+제대로 만들지만, 그 전에 최상위 `/opt/icuh`만 여기서 먼저 만들어 둔다 — 안 그러면 아래 리다이렉트가
+"디렉터리 없음"으로 실패한다. (Step 5를 이 스텝보다 앞으로 당기는 대신, mkdir을 이렇게 나눠 순서
+번호를 브리프와 그대로 맞췄다. Step 5에서 다시 mkdir/chown을 실행해도 안전하다 — 이미 있는 디렉터리에
+대한 재실행이라 아무 것도 깨지지 않는다.)
+
+```bash
+sudo mkdir -p /opt/icuh
+sudo chown -R "$USER":"$USER" /opt/icuh
+```
+
+이미지를 태그한다:
 
 ```bash
 OLD_IMAGE=$(docker inspect --format '{{.Config.Image}}' icuh_platform)
@@ -127,8 +145,25 @@ docker images | grep icuh-platform
 ```
 
 `OLD_IMAGE`를 구할 때도 `icuh_platform`은 Step 1에서 확인한 실제 컨테이너 이름으로 바꿔서 실행한다.
-`icuh-platform:rollback` 태그가 `docker images` 출력에 보이면 성공이다. 이 이미지가 있으면 언제든
-구 앱을 8081로 되돌릴 수 있다 (맨 위 "먼저 읽는다" 절의 되돌리기 명령 참고).
+
+이미지 태그만으로는 부족하다. Step 8의 `docker rm`은 컨테이너의 실행 설정 — 환경변수 십여 개, 포트
+매핑, 볼륨 마운트 — 까지 함께 지운다. 이미지와 별도로 그 설정을 파일로 남겨 둔다:
+
+```bash
+docker inspect icuh_platform > /opt/icuh/old-container-inspect.json
+docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' icuh_platform > /opt/icuh/old-container-env.txt
+wc -l /opt/icuh/old-container-inspect.json /opt/icuh/old-container-env.txt
+chmod 600 /opt/icuh/old-container-inspect.json /opt/icuh/old-container-env.txt
+```
+
+**`old-container-env.txt`에는 구 앱의 DB 비밀번호와 AWS 시크릿 키가 평문으로 들어 있다.** 방금
+`chmod 600`으로 다른 계정이 읽지 못하게 좁혔지만 그걸로 끝이 아니다 — 새 배포가 충분히 안정적으로
+자리 잡아 롤백할 일이 더는 없다고 판단되면, `old-container-inspect.json`과 `old-container-env.txt`
+두 파일을 반드시 삭제한다.
+
+`icuh-platform:rollback` 태그가 `docker images` 출력에 보이고, 두 백업 파일이 `wc -l`에서 0보다 큰
+줄 수로 나오면 성공이다. 이 이미지와 두 파일이 있으면 언제든 구 앱을 8081로 되돌릴 수 있다 (맨 위
+"먼저 읽는다" 절의 되돌리기 명령 참고).
 
 실행 결과:
 
@@ -138,6 +173,9 @@ docker images | grep icuh-platform
 
 (docker images | grep icuh-platform 출력 — icuh-platform:rollback 줄이 보여야 한다)
 
+
+(wc -l 출력 — old-container-inspect.json, old-container-env.txt 두 줄)
+
 ```
 
 - [ ] **Step 5: 배포 디렉터리를 만든다**
@@ -146,6 +184,10 @@ docker images | grep icuh-platform
 sudo mkdir -p /opt/icuh/logs/public
 sudo chown -R "$USER":"$USER" /opt/icuh
 ```
+
+`/opt/icuh` 자체는 Step 4에서 백업 파일을 쓰려고 이미 만들어 뒀다 — 여기서 다시 만들어도 안전하다
+(이미 있으면 `mkdir -p`는 아무 것도 하지 않고, `chown -R`도 이미 소유한 파일에 다시 걸어도 무해하다).
+이 스텝이 실제로 새로 만드는 것은 `logs/public` 하위 디렉터리다.
 
 `logs/public`만 만드는 이유: `public-api`만 파일 로그를 남기고(`docker-compose.yml`이 이 디렉터리를
 `/root/log/spring`에 마운트한다), `admin-api`·`open-api`는 표준출력으로만 로그를 낸다 — 필요하면
@@ -247,7 +289,9 @@ curl -fsS localhost:8083/health && echo " open OK"
 정보 문제다.
 
 **되돌리려면:** `docker compose down && docker run -d --name icuh_platform -p 8081:8081 icuh-platform:rollback`
-(원래 실행 옵션은 `public-api/.github/workflows/cicd.yml`의 Deploy 스텝 참고)
+— 이 명령 자체는 최소 기동만 한다. 원래 포트/환경변수/볼륨 옵션은 Step 4에서 남긴
+`/opt/icuh/old-container-inspect.json` · `/opt/icuh/old-container-env.txt`를 보고 반영한다. 두 파일이
+없다면 참고용으로 `public-api/.github/workflows/cicd.yml`의 Deploy 스텝을 대신 본다.
 
 실행 결과:
 
@@ -319,3 +363,10 @@ git commit -m "docs: EC2 최초 세팅 런북과 실행 결과 기록"
   (`public-api/src/main/java/.../health/api/HealthController.java`, `admin-api/src/main/java/.../HealthController.java`),
   `open-api`가 `ResponseEntity.build()`로 빈 본문을 반환한다
   (`open-api/src/main/java/.../HealthController.java`). 이 문서는 소스 코드 기준(반대)으로 작성했다.
+- Step 4는 원래 이미지 태그(`icuh-platform:rollback`)만 백업했다. 이미지만으로는 부족하다 —
+  Step 8의 `docker rm`이 구 컨테이너의 실행 설정(환경변수 십여 개, 포트 매핑, 볼륨 마운트)까지 함께
+  지우기 때문이다. 그래서 Step 4에 `docker inspect` 전체 출력과 환경변수 목록을 파일로 남기는 절차를
+  추가했다(`/opt/icuh/old-container-inspect.json` · `/opt/icuh/old-container-env.txt`). 뒤의
+  파일에는 구 앱의 DB 비밀번호·AWS 시크릿 키가 평문으로 들어가므로 `chmod 600`으로 권한을 좁히고,
+  롤백 가능성이 없어지면 삭제하도록 문서에 명시했다. 이 캡처가 `/opt/icuh` 존재를 전제하므로, Step 5의
+  디렉터리 생성 중 최상위 `/opt/icuh` 부분만 Step 4로 앞당겼다(스텝 번호는 브리프와 동일하게 유지).

@@ -578,7 +578,17 @@ sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 docker compose version
 ```
 
-- [ ] **Step 4: 구 앱 이미지를 백업한다 (되돌릴 수 있게)**
+- [ ] **Step 4: 구 앱 이미지와 실행 설정을 백업한다 (되돌릴 수 있게)**
+
+백업 파일을 쓸 자리가 있어야 하므로, Step 5가 만드는 `/opt/icuh` 중 최상위 디렉터리만 여기서 먼저
+만든다(로그용 하위 디렉터리와 전체 소유권 정리는 Step 5에서 마저 한다):
+
+```bash
+sudo mkdir -p /opt/icuh
+sudo chown -R "$USER":"$USER" /opt/icuh
+```
+
+이미지를 태그한다:
 
 ```bash
 OLD_IMAGE=$(docker inspect --format '{{.Config.Image}}' icuh_platform)
@@ -587,7 +597,21 @@ docker tag "$OLD_IMAGE" icuh-platform:rollback
 docker images | grep icuh-platform
 ```
 
-`icuh-platform:rollback` 태그가 보이면 성공이다. 이 이미지가 있으면 언제든 구 앱을 8081로 되돌릴 수 있다.
+이미지만으로는 부족하다 — Step 8의 `docker rm`이 컨테이너의 실행 설정(환경변수 십여 개, 포트 매핑,
+볼륨 마운트)까지 함께 지운다. 그 설정을 파일로 남긴다:
+
+```bash
+docker inspect icuh_platform > /opt/icuh/old-container-inspect.json
+docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' icuh_platform > /opt/icuh/old-container-env.txt
+wc -l /opt/icuh/old-container-inspect.json /opt/icuh/old-container-env.txt
+chmod 600 /opt/icuh/old-container-inspect.json /opt/icuh/old-container-env.txt
+```
+
+`old-container-env.txt`에는 구 앱의 DB 비밀번호와 AWS 시크릿 키가 평문으로 들어 있다. `chmod 600`으로
+권한을 좁히고, 새 배포가 충분히 안정화되어 롤백 가능성이 없다고 판단되면 두 파일을 삭제한다.
+
+`icuh-platform:rollback` 태그가 보이고 두 백업 파일이 `wc -l`에서 0보다 큰 줄 수로 나오면 성공이다.
+이 이미지와 두 파일이 있으면 언제든 구 앱을 8081로 되돌릴 수 있다.
 
 - [ ] **Step 5: 배포 디렉터리를 만든다**
 
@@ -649,7 +673,11 @@ curl -fsS localhost:8083/health && echo " open OK"
 
 셋 다 성공해야 한다. 실패하면 `docker compose logs <service>`로 원인을 본다. 대개 해당 서비스의 `.env.<name>`의 DB 접속 정보 문제다.
 
-되돌리려면: `docker compose down && docker run -d --name icuh_platform -p 8081:8081 icuh-platform:rollback` (원래 실행 옵션은 `icuh-platform/.github/workflows/cicd.yml`의 Deploy 스텝 참고).
+되돌리려면: `docker compose down && docker run -d --name icuh_platform -p 8081:8081 icuh-platform:rollback`.
+이 명령은 최소 기동만 한다 — 원래 포트/환경변수/볼륨 옵션은 Step 4에서 남긴
+`/opt/icuh/old-container-inspect.json` · `/opt/icuh/old-container-env.txt`를 보고 반영한다. 두 파일이
+없다면 참고용으로 `public-api/.github/workflows/cicd.yml`의 Deploy 스텝을 대신 본다(브리프가 원래
+가리키던 `icuh-platform/.github/workflows/cicd.yml`은 이 저장소에 없는 경로다).
 
 - [ ] **Step 10: 첫 성공 태그를 기록한다**
 
