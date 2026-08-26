@@ -14,9 +14,15 @@ for m in "${MODULES[@]}"; do
     || { echo "FAIL: $m 이미지에 app.jar가 없다"; exit 1; }
 
   echo "=== 기동 확인 $m"
-  out=$(docker run --rm "icuh-local/$m:verify" 2>&1 | head -40 || true)
-  echo "$out" | grep -q "Starting IcuhDrought\|Starting IcuhPlatform\|Spring Boot" \
-    || { echo "FAIL: $m 이 Spring Boot 기동 로그를 내지 않았다"; echo "$out"; exit 1; }
+  cid=$(docker run -d "icuh-local/$m:verify")
+  found=0
+  for _ in $(seq 1 30); do
+    if docker logs "$cid" 2>&1 | grep -q "Starting Icuh\|Spring Boot"; then found=1; break; fi
+    sleep 1
+  done
+  logs=$(docker logs "$cid" 2>&1 | head -40 || true)
+  docker rm -f "$cid" >/dev/null
+  [ "$found" -eq 1 ] || { echo "FAIL: $m 이 Spring Boot 기동 로그를 내지 않았다"; echo "$logs"; exit 1; }
   echo "OK: $m"
 done
 
