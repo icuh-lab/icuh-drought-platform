@@ -523,7 +523,17 @@ GitHub → 이 저장소 → Settings → Secrets and variables → Actions:
 
 | 이름 | 값 |
 |---|---|
-| `SSH_EC2_KEY` | 이 EC2 접속용 개인키 전체 (`-----BEGIN ...` 줄부터 끝줄까지) |
+| `SSH_EC2_KEY` | 개인키를 **base64로 인코딩한 한 줄**. pem 원문을 그대로 넣으면 안 된다 — 아래 참고 |
+
+`SSH_EC2_KEY`는 반드시 이렇게 등록한다. 여러 줄 pem을 그대로 넣으면 등록 방법에
+따라 줄바꿈이 사라져 배포가 `error in libcrypto`로 실패한다(실제로 두 번 겪었다).
+
+```bash
+base64 < ~/경로/키.pem | gh secret set SSH_EC2_KEY
+```
+
+워크플로가 `base64 -d`로 복원한 뒤 `ssh-keygen -y`로 유효성을 확인하므로,
+잘못 등록하면 `Write SSH key` 단계에서 원인을 알려주며 멈춘다.
 | `SSH_EC2_USER` | Step 1에서 SSH로 접속할 때 쓴 `<user>` |
 | `SSH_EC2_HOST` | Step 1에서 접속한 바로 그 `<host>` |
 | `AWS_ACCESS_KEY_ID` | 보안그룹 규칙을 추가/삭제할 수 있는 IAM 사용자 |

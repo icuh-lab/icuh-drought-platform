@@ -142,10 +142,19 @@ jobs:
             --protocol tcp --port 22 \
             --cidr ${{ steps.ip.outputs.ipv4 }}/32
 
+      # SSH_EC2_KEY는 pem 원문이 아니라 base64 한 줄로 저장한다. 여러 줄 시크릿은
+      # 등록 방법에 따라 줄바꿈이 뭉개져 `error in libcrypto`로 조용히 실패한다.
+      # 등록: base64 < key.pem | gh secret set SSH_EC2_KEY
       - name: Write SSH key
         run: |
-          echo "${{ secrets.SSH_EC2_KEY }}" > deploy_key.pem
+          echo "${{ secrets.SSH_EC2_KEY }}" | base64 -d > deploy_key.pem
           chmod 400 deploy_key.pem
+          # 키가 깨졌다면 여기서 명확한 메시지로 멈춘다. scp가 한 단계 뒤에서
+          # Permission denied로 실패하면 원인이 키인지 서버인지 구분되지 않는다.
+          ssh-keygen -y -f deploy_key.pem > /dev/null 2>&1 || {
+            echo "::error::SSH_EC2_KEY를 복원하지 못했다. base64 인코딩된 pem인지 확인한다: base64 < key.pem | gh secret set SSH_EC2_KEY"
+            exit 1
+          }
 
       - name: Sync compose file
         run: |

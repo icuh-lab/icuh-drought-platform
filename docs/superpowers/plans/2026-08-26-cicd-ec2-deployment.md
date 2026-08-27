@@ -907,7 +907,7 @@ Task 6 Step 1과 같은 여섯 개다. 런북에도 넣는 이유: 운영자가 
 
 | 이름 | 값 |
 |---|---|
-| `SSH_EC2_KEY` | 이 EC2 접속용 개인키 전문 |
+| `SSH_EC2_KEY` | 개인키를 base64로 인코딩한 한 줄 |
 | `SSH_EC2_USER` | Step 1에서 접속에 쓴 `<user>` |
 | `SSH_EC2_HOST` | Step 1에서 접속한 그 `<host>` |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | 보안그룹 조작 권한 |
@@ -951,7 +951,7 @@ Settings → Secrets and variables → Actions.
 
 | 이름 | 값 |
 |---|---|
-| `SSH_EC2_KEY` | 배포용 pem 전문 |
+| `SSH_EC2_KEY` | 배포용 pem을 base64로 인코딩한 한 줄 |
 | `SSH_EC2_USER` | 예: `ubuntu` |
 | `SSH_EC2_HOST` | EC2 퍼블릭 IP 또는 도메인 |
 | `AWS_ACCESS_KEY_ID` | 보안그룹 조작 권한 |
@@ -1060,7 +1060,7 @@ concurrency:
 
       - name: Write SSH key
         run: |
-          echo "${{ secrets.SSH_EC2_KEY }}" > deploy_key.pem
+          echo "${{ secrets.SSH_EC2_KEY }}" | base64 -d > deploy_key.pem
           chmod 400 deploy_key.pem
 
       - name: Sync compose file
