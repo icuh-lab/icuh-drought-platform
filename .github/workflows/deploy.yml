@@ -170,6 +170,9 @@ jobs:
             ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} \
             'docker login ghcr.io -u ${{ github.actor }} --password-stdin'
 
+      # compose가 `web`을 external로 선언하므로, 없으면 up이 "network web not found"로
+      # 실패한다. 프론트 저장소의 bootstrap.sh가 만들지만 그 실행 시점에 의존하지 않도록
+      # 여기서도 보증한다. 이미 있으면 create를 건너뛴다.
       - name: Pull and start
         id: deploy
         continue-on-error: true
@@ -178,7 +181,8 @@ jobs:
         run: |
           ssh -i deploy_key.pem -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=8 -o BatchMode=yes \
             ${{ secrets.SSH_EC2_USER }}@${{ secrets.SSH_EC2_HOST }} \
-            "cd /opt/icuh && IMAGE_TAG=${IMAGE_TAG} docker compose pull && IMAGE_TAG=${IMAGE_TAG} docker compose up -d --remove-orphans"
+            "docker network inspect web >/dev/null 2>&1 || docker network create web; \
+             cd /opt/icuh && IMAGE_TAG=${IMAGE_TAG} docker compose pull && IMAGE_TAG=${IMAGE_TAG} docker compose up -d --remove-orphans"
 
       - name: Health check
         id: health
@@ -225,6 +229,7 @@ jobs:
             echo "롤백 대상 이미지(${PREV}) pull 실패 — 수동 개입 필요"
             exit 1
           fi
+          docker network inspect web >/dev/null 2>&1 || docker network create web
           IMAGE_TAG="$PREV" docker compose up -d --remove-orphans
           deadline=$(( $(date +%s) + 240 ))
           ok=0
