@@ -1,6 +1,7 @@
 package re.kr.icuh.drought.domain.article;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 import java.util.List;
 
@@ -30,7 +31,7 @@ public record UpdateArticleRequest(
         @NotNull String tempPassword,
         @NotNull String documentTypeCode,
         @NotNull String subjectDomainCode,
-        @NotNull String source,
+        @NotNull @Pattern(regexp = ArticleSource.PATTERN, message = ArticleSource.MESSAGE) String source,
         List<NewFileRequest> newFiles
 ) {
     public record NewFileRequest(
