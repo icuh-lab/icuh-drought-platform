@@ -10,9 +10,13 @@ EC2 한 대에 public-api(8081) · admin-api(8082) · open-api(8083) 세 컨테�
 | 포트 | 컨테이너 | 관리 주체 | 외부 노출 |
 |---|---|---|---|
 | 8080 | `icuh_platform_api` | 구 저장소 `icuh-lab/icuh-platform-api`의 워크플로 (여전히 active) | 열림 |
-| 8081 | `icuh-public-api` | 이 저장소의 `deploy.yml` | 열림 |
+| 8081 | `icuh-public-api` | 이 저장소의 `deploy.yml` | **루프백 전용** — 외부는 Caddy가 `api.infradna.io.kr`로 받는다 |
 | 8082 | `icuh-admin-api` | 이 저장소의 `deploy.yml` | 차단 (보안그룹 미개방 + 루프백 바인딩) |
-| 8083 | `icuh-open-api` | 이 저장소의 `deploy.yml` | **미개방** — 프론트(Caddy) 배포 시 Caddy IP에만 열 예정 |
+| 8083 | `icuh-open-api` | 이 저장소의 `deploy.yml` | **루프백 전용** — 외부는 Caddy가 `open-api.infradna.io.kr`로 받는다 |
+
+`public-api`·`open-api`는 `web` 도커 네트워크에도 붙어 있어 Caddy가 컨테이너 이름으로 찾는다.
+`admin-api`는 인증이 없어 `web`에 붙이지 않는다. 포트를 완전히 없애지 않고 루프백으로 좁힌 것은
+배포 워크플로의 헬스체크·롤백 검증이 호스트에서 `curl localhost:<port>/health`를 쓰기 때문이다.
 
 주의할 점 셋:
 
