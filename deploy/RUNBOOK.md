@@ -1,5 +1,11 @@
 # EC2 최초 세팅 런북
 
+> **상태: 2026-08-27 실행 완료. 다만 이 문서의 전제가 실측과 달라, 절차 원문을 그대로 따르면 안 된다.**
+> 무엇이 어떻게 달랐고 지금 EC2가 어떤 상태인지는 아래 **"실행 완료 기록"** 절에 있다. 특히 **롤백
+> 절차가 바뀌었다** — "먼저 읽는다" 절과 Step 4·11의 되돌리기 명령은 존재하지 않는 파일과 이미지를
+> 가리키므로 실패한다. 각 스텝의 "실행 결과"에 실제로 무엇을 했는지 적어 두었고, 절차 원문은 설계
+> 의도를 남기려고 지우지 않았다.
+
 EC2 한 대에 `public-api`(8081) · `admin-api`(8082) · `open-api`(8083) 세 컨테이너를 처음으로 올리는
 수동 절차다. **사람이 SSH로 EC2에 접속해 순서대로 실행한다. 자동화 대상이 아니다.**
 
@@ -16,6 +22,111 @@ Actions의 수동 실행(`workflow_dispatch`)에서 돈다. 따라서 README의 
 다만 자동 롤백은 EC2의 `/opt/icuh/.last-good`이 가리키는 이미지가 있어야 성립하고, 그 파일은 이
 런북 **Step 12에서 처음 만들어진다.** 즉 **이 런북을 끝내기 전까지는 자동 롤백이 없다** — 그 전에
 되돌릴 일이 생기면 이 문서 자체의 수동 절차(바로 아래 "먼저 읽는다" 절의 명령, Step 4의 백업)를 쓴다.
+
+> **[2026-08-27] 이 단락의 조건은 충족됐다.** `/opt/icuh/.last-good`에
+> `91d0c9b24a546a6fc4eae903709add451e2bc92d`가 기록돼 있고 그 태그로 세 컨테이너가 실제로 떠 있다.
+> **워크플로의 자동 롤백은 지금 성립한다.** 반면 이 단락이 "그 전에 쓰라"고 안내한 수동 절차 쪽이
+> 오히려 무효가 됐다(Step 4를 원문대로 실행하지 않았다) — 대체 절차는 "실행 완료 기록" 절에 있다.
+
+---
+
+## 실행 완료 기록 — 2026-08-27
+
+**이 런북은 2026-08-27에 실행됐다. 그런데 이 문서의 전제가 실측과 달랐다.**
+
+런북은 "8081에서 서비스 중인 구 컨테이너 `icuh_platform`을 멈추고 그 자리를 `public-api`로 **교체**한다"를
+전제로 쓰였다(Step 4·10, "먼저 읽는다" 절 전체). 실제로 EC2에 붙어 보니 **`icuh_platform`은 이미 4일 전에
+종료(`Exited (143)`)된 상태였고, 8081을 점유하고 있지 않았다.** 살아서 트래픽을 받고 있던 것은 런북이
+언급조차 하지 않은 **8080의 `icuh_platform_api`**였다.
+
+그래서 컷오버는 일어나지 않았다. **교체가 아니라 병행이 됐다.** 구 API는 8080에서 계속 돌고, 신규 3개
+앱이 8081·8082·8083에 새로 올라갔다. 이 문서에서 가장 위험하다고 경고한 Step 10(파괴적 컷오버)은
+**실행되지 않았고, 구 컨테이너는 하나도 삭제되지 않았다.**
+
+### 최종 토폴로지
+
+호스트: `ec2-54-180-165-127.ap-northeast-2.compute.amazonaws.com` (ubuntu, 3907MB)
+
+| 포트 | 컨테이너 | 이미지 | 외부 노출 |
+|---|---|---|---|
+| 8080 | `icuh_platform_api` | `ljs0429777/icuh-platform-api:latest` | **열림** — 구 API, 계속 운영 |
+| 8081 | `icuh-public-api` | `.../public-api:91d0c9b2…` | **열림** — 구 앱이 쓰던 보안그룹 규칙이 남아 자동으로 열려 있었다 |
+| 8082 | `icuh-admin-api` | `.../admin-api:91d0c9b2…` | **차단** — 보안그룹 미개방 + `127.0.0.1` 바인딩 이중 차단 |
+| 8083 | `icuh-open-api` | `.../open-api:91d0c9b2…` | **미개방** — Step 13 지시와 달리 열지 않았다. 아래 참고 |
+
+신규 3개는 모두 커밋 `91d0c9b24a546a6fc4eae903709add451e2bc92d` 태그로 떠 있고, 헬스체크
+8081·8082·8083 모두 200이다(8080 구 API도 200).
+
+> **[이후 변경] 위 표는 배포 직후(2026-08-27 오전) 상태다.** 같은 날 Caddy 리버스 프록시 도입을
+> 시작하면서 8081·8083이 **호스트 루프백 바인딩으로 바뀌었고**(`127.0.0.1:8081` / `127.0.0.1:8083`),
+> 두 컨테이너가 `web` 도커 네트워크에도 붙었다. 외부 트래픽은 Caddy의 80·443만 받는다.
+> 최종 주소는 `https://api.infradna.io.kr`(public) · `https://open-api.infradna.io.kr`(open)이다.
+> 자세한 내용은 `deploy/README.md`를 본다.
+
+### 스텝별 실제 처리
+
+| 스텝 | 처리 |
+|---|---|
+| 1 | 실행. 다만 여기서 전제가 무너진 것을 발견했다 |
+| 2·3 | **생략** — 메모리 3907MB(2GB 이상), compose v2.40.0 이미 설치됨 |
+| 4 | **다르게 처리** — 컷오버를 안 하기로 해서 `icuh-platform:rollback` 태그와 두 백업 파일을 만들지 않았다. 아래 "롤백 전제가 바뀌었다" 참고 |
+| 5·6 | 실행 |
+| 7·8·10·11·12 | **Deploy 워크플로 실행으로 대체** — 사람이 SSH로 하지 않았다. run [33029320575](https://github.com/icuh-lab/icuh-drought-platform/actions/runs/33029320575) (`workflow_dispatch`, `main`, 2026-08-27T01:11:52Z UTC, 2m50s, success) |
+| 9 | 실행. 단 구 저장소가 하나가 아니라 넷이었다 — Step 9 슬롯 참고 |
+| 13 | **생략** — 8083을 열지 않았다. 8081은 이미 열려 있었고 8082는 원래 안 여는 것이라, 실제로 할 일이 없었다 |
+| 14·15 | 실행 |
+
+### 롤백 전제가 바뀌었다 — "먼저 읽는다" 절보다 이쪽이 맞다
+
+문서 앞쪽 "먼저 읽는다" 절과 Step 4·11이 안내하는 되돌리기 명령은
+`docker run … icuh-platform:rollback`과 `/opt/icuh/old-container-inspect.json` ·
+`/opt/icuh/old-container-env.txt`를 쓴다. **그 이미지 태그도, 그 두 파일도 EC2에 없다.** 컷오버를
+하지 않기로 하면서 Step 4를 그 형태로 실행하지 않았기 때문이다. 그 명령을 그대로 치면 실패한다.
+
+대신 **더 온전한 롤백 수단이 남았다.** Step 10의 `docker rm`을 실행하지 않았으므로 구 컨테이너들이
+실행 설정을 그대로 지닌 채 `exited` 상태로 살아 있다 — 환경변수·포트 매핑·볼륨이 도커 안에 원형
+그대로 보존돼 있다는 뜻이다.
+
+```bash
+docker inspect --format '{{.Name}} {{.State.Status}} {{.HostConfig.PortBindings}}' icuh_platform icuh_platform_admin
+# /icuh_platform       exited map[8081/tcp:[{ 8081}]]
+# /icuh_platform_admin exited map[8082/tcp:[{ 8082}]]
+```
+
+되돌리려면 `docker run`으로 새로 만드는 것이 아니라 **`docker start`로 되살린다.** 다만 두 가지를
+반드시 먼저 안다.
+
+1. **8081은 지금 `icuh-public-api`가 점유하고 있다.** `docker start icuh_platform`을 그냥 실행하면
+   포트 충돌로 실패한다. 되돌릴 때는 `cd /opt/icuh && docker compose down`을 **먼저** 한다.
+2. **`icuh_platform_admin`은 `0.0.0.0:8082`에 바인딩돼 있다.** 되살리는 순간 인증이 없는 구 admin이
+   외부에 그대로 열린다. 신규 `admin-api`를 루프백에 가둔 이유와 정확히 같은 위험이니, 이 컨테이너는
+   되살리지 않는다.
+
+```bash
+# 구 앱으로 되돌리기 (8081)
+cd /opt/icuh && docker compose down && docker start icuh_platform && docker ps
+```
+
+**따라서 지금은 구 컨테이너 5개를 지우지 않는 것 자체가 롤백 장치다.** `docker rm`이나
+`docker system prune -a`를 실행하지 않는다. 배포 워크플로의 `docker image prune`은
+`label=re.kr.icuh.project=drought-platform`으로 한정돼 있어 구 이미지를 건드리지 않는다.
+
+### 이 문서를 다시 쓸 사람에게 — 남은 위험
+
+- **`icuh-lab/icuh-platform-fo`의 CI/CD 워크플로가 켜져 있고, `-p 80:80`으로 배포한다.** 컨테이너는
+  지금 exited지만 누가 push하면 되살아난다. 프론트를 Caddy(https)로 올릴 때 **80번 포트를 두고
+  충돌한다.** 그 작업 전에 이 워크플로를 끄거나 구 FO를 정리한다.
+- **8083을 아직 열지 않아 프론트가 open-api를 호출할 수 없다.** 게다가 프론트는 Caddy로 https를 쓰는데
+  API는 raw http라, 열더라도 https 페이지에서의 호출은 브라우저가 mixed content로 차단한다. Caddy가
+  API도 함께 프록시하는 방향으로 합의했고, 그때 **8083은 Caddy 서버 IP에만 열고 8081은 오히려 닫는다.**
+- **`admin-api`는 여전히 인증이 전혀 없다.** 지금은 이중 차단으로 가려 둔 것뿐이고, 노출하려면 인증이
+  선행되어야 한다.
+- **구 API(8080)를 언제까지 병행할지 정해지지 않았다.** 이 컨테이너에는 `mem_limit`이 없어 호스트
+  전체(3.8GiB)를 자기 몫으로 본다 — 신규 3개는 합계 1792m로 묶여 있는 것과 대조된다.
+- **`open-api/outputs/db_check_work/실측가뭄_사례검증_DB현황조사_20260805.md`가 EC2를 `3.37.105.126`으로
+  적고 있다.** 위 호스트와 다르다. 별개 인스턴스인지 IP 변경인지 확인되지 않았다.
+
+---
 
 ## 실행 순서 — 이 런북은 언제 실행하나
 
@@ -52,6 +163,13 @@ Actions의 수동 실행(`workflow_dispatch`)에서 돈다. 따라서 README의 
 
 ## 먼저 읽는다 — 파괴적 단계와 되돌리기
 
+> **[2026-08-27 실행 후] 이 절의 되돌리기 명령은 그대로 쓰면 실패한다.** 아래 네 항목은 "8081의 구
+> 컨테이너를 지우고 교체한다"는 전제로 쓰였는데, 실제 실행에서는 컷오버를 하지 않았다. 그래서
+> 여기 나오는 `icuh-platform:rollback` 이미지도, `/opt/icuh/old-container-inspect.json` ·
+> `old-container-env.txt` 두 파일도 **EC2에 존재하지 않는다.** 지금 유효한 롤백 절차는 위
+> "실행 완료 기록 → 롤백 전제가 바뀌었다"에 있다(`docker compose down && docker start icuh_platform`).
+> 아래 원문은 절차가 어떤 전제로 설계됐는지 남겨 두려고 그대로 둔다.
+
 이 런북에서 절대 놓치면 안 되는 네 가지다.
 
 1. **Step 10은 파괴적이다.** 8081에서 지금 서비스 중인 구 컨테이너를 멈추고 제거한다. **Step 4에서
@@ -87,7 +205,7 @@ Actions의 수동 실행(`workflow_dispatch`)에서 돈다. 따라서 README의 
 
 ---
 
-- [ ] **Step 1: 현재 상태를 기록한다**
+- [x] **Step 1: 현재 상태를 기록한다**
 
 ```bash
 ssh -i <키> <user>@<host>
@@ -117,24 +235,44 @@ Step 15에서 다른 결과와 함께 한 번에 한다. (Step 8의 `scp`는 로
 
 실행 결과:
 
-```
-(docker ps -a 출력)
-
-
-(docker compose version 출력)
-
-
-(df -h / 출력)
-
-
-(free -m 출력)
-
-
-(swapon --show 출력)
+**여기서 이 런북의 전제가 무너졌다.** 아래는 같은 날 실측으로 재확인한 값이다(실행 당시 원본 출력은
+그대로 보존하지 못했다).
 
 ```
+$ docker ps -a
+icuh_platform_api     ljs0429777/icuh-platform-api:latest    0.0.0.0:8080->8080/tcp   Up 4 days
+icuh_platform         ljs0429777/icuh-platform:latest        (포트 없음)              Exited (143) 4 days ago
+icuh_platform_admin   ljs0429777/icuh-platform-admin:latest  0.0.0.0:8082->8082/tcp   Exited (255) 4 days ago
+icuh-platform-fo      ljs0429777/icuh-platform-fo:latest     (포트 없음)              Exited (0) 4 days ago
+icuh_platform_api_before_dbfix_20260821141622                (포트 없음)              Exited (143) 5 days ago
+eloquent_wilbur       hello-world                            (포트 없음)              Exited (0) 10 months ago
 
-- [ ] **Step 2: (메모리가 2GB 미만일 때만) 스왑을 만든다**
+$ docker compose version
+Docker Compose version v2.40.0
+
+$ free -m
+               total        used        free      shared  buff/cache   available
+Mem:            3907        1711         213           2        2289        2196
+Swap:              0           0           0
+
+$ swapon --show
+(출력 없음 — SWAP-NONE)
+
+$ df -h /
+(보존하지 못함. 이후 배포·이미지 pull이 모두 성공했으므로 여유는 있었다)
+```
+
+읽어야 할 것 셋:
+
+- **`icuh_platform`이 `Exited (143)` 상태이고 포트가 없다.** 이 런북이 "8081에서 서비스 중"이라
+  전제하고 Step 4·10을 통째로 설계한 그 컨테이너다. 이미 4일 전에 죽어 있었다. 8081은 비어 있었다.
+- **살아 있던 것은 `icuh_platform_api`(8080)다.** 이 문서는 이 컨테이너를 한 번도 언급하지 않는다.
+  즉 컷오버 대상이 애초에 존재하지 않았고, 신규 배포는 교체가 아니라 **병행**이 된다.
+- 메모리 3907MB, compose v2.40.0 → **Step 2·3은 건너뛴다.** `mem_limit` 합계 1792m에 OS·도커 몫
+  512m을 더해도 2304m로 3907m 안에 들어오므로 `docker-compose.yml`은 손대지 않았다(Step 15에서
+  커밋할 compose 변경도 따라서 없다).
+
+- [x] **Step 2: (메모리가 2GB 미만일 때만) 스왑을 만든다** — *건너뜀*
 
 Step 1에서 확인한 메모리가 2GB 미만이 아니면 이 스텝은 건너뛴다.
 
@@ -150,11 +288,11 @@ free -m
 실행 결과:
 
 ```
-(건너뛰었으면 "N/A — 메모리 충분"이라고만 적는다. 실행했으면 마지막 free -m 출력을 붙인다)
+N/A — 메모리 충분(3907MB). 건너뛰었다. 스왑은 지금도 0이다.
 
 ```
 
-- [ ] **Step 3: docker compose v2가 없으면 설치한다**
+- [x] **Step 3: docker compose v2가 없으면 설치한다** — *건너뜀*
 
 Step 1에서 `COMPOSE-V2-NONE`이 나온 경우에만:
 
@@ -169,11 +307,17 @@ docker compose version
 실행 결과:
 
 ```
-(건너뛰었으면 "N/A — 이미 compose v2 있음"이라고만 적는다. 실행했으면 docker compose version 출력을 붙인다)
+N/A — 이미 compose v2 있음(v2.40.0). 건너뛰었다.
 
 ```
 
-- [ ] **Step 4: 구 앱 이미지와 실행 설정을 백업한다 (되돌릴 수 있게)**
+- [x] **Step 4: 구 앱 이미지와 실행 설정을 백업한다 (되돌릴 수 있게)** — *아래 원문대로 실행하지 않았다*
+
+> **[2026-08-27] 이 스텝은 원문대로 실행되지 않았다.** Step 1에서 컷오버 대상(`icuh_platform`)이 이미
+> 죽어 있는 것이 드러나 Step 10을 실행하지 않기로 했고, 그러자 이 백업의 목적 자체가 사라졌다.
+> `icuh-platform:rollback` 태그도, 아래 두 파일도 만들지 않았다. 대신 `docker ps -a` 스냅샷만
+> `/opt/icuh/old-containers.txt`로 남겼다. **구 컨테이너를 `docker rm`하지 않은 것이 결과적으로 더
+> 온전한 롤백 수단이 됐다** — 자세한 내용은 스텝 끝의 실행 결과와 "실행 완료 기록" 절 참고.
 
 **이 스텝이 Step 10을 되돌릴 수 있게 만드는 유일한 장치다. 건너뛰지 않는다.**
 
@@ -241,18 +385,48 @@ docker images | grep icuh-platform
 
 실행 결과:
 
-```
-(OLD_IMAGE 값)
-
-
-(설정 백업 / 환경변수 백업 확인 두 줄의 출력)
-
-
-(docker images | grep icuh-platform 출력 — icuh-platform:rollback 줄이 보여야 한다)
+위 명령들은 실행하지 않았다. 실제로 남긴 것과, 지금 유효한 롤백 수단은 다음과 같다.
 
 ```
+$ ls -l /opt/icuh/old-containers.txt
+-rw------- 1 ubuntu ubuntu 541 Aug 27 10:02 /opt/icuh/old-containers.txt   # docker ps -a 스냅샷 6줄
 
-- [ ] **Step 5: 배포 디렉터리를 만든다**
+$ ls -l /opt/icuh/old-container-inspect.json /opt/icuh/old-container-env.txt
+ls: cannot access ...: No such file or directory                            # 둘 다 만들지 않았다
+
+$ docker images | grep -i rollback
+icuh-platform-api   rollback   dc859e0cdfd0   2 months ago   358MB          # ← 이 런북과 무관한 태그다
+
+$ docker inspect icuh-platform:rollback
+Error: No such object: icuh-platform:rollback                               # Step 4가 만들었을 태그는 없다
+```
+
+> **함정 주의.** `docker images | grep rollback`을 치면 `icuh-platform-api:rollback`이 걸린다.
+> 이름이 비슷해서 "Step 4가 실행됐구나"로 오해하기 쉽지만, **이건 2개월 전에 만들어진 8080 구
+> API(`icuh-platform-api`)의 태그이고 이 런북과 아무 관계가 없다.** Step 4가 만들었어야 할 태그는
+> `icuh-platform:rollback`(`-api` 없음)이며, 그것은 존재하지 않는다.
+
+- `old-containers.txt`에는 **시크릿이 없다**(`password|secret|access_key|SPRING_DATASOURCE` 검사 0건).
+  `docker inspect`의 환경변수 덤프가 아니라 `docker ps -a` 출력이기 때문이다. 원문 Step 4가 경고한
+  "평문 시크릿이 든 파일을 나중에 반드시 지울 것"은 **해당 사항이 없다.**
+- 대신 구 컨테이너 5개가 `docker rm`되지 않고 `exited` 상태로 남아, 실행 설정이 도커 안에 원형 그대로
+  보존돼 있다. 파일로 백업할 필요 자체가 없어진 셈이다.
+
+```
+$ docker inspect --format '{{.Name}} {{.State.Status}} {{.HostConfig.PortBindings}}' icuh_platform icuh_platform_admin
+/icuh_platform       exited map[8081/tcp:[{ 8081}]]
+/icuh_platform_admin exited map[8082/tcp:[{ 8082}]]
+```
+
+컨테이너가 참조하는 이미지도 그대로 살아 있다 — `icuh_platform`은 `sha256:dbe2d0b1efcc`를 쓰고,
+이 이미지는 `ljs0429777/icuh-platform:latest`로 태깅돼 있다. 즉 컨테이너·이미지 양쪽이 온전하다.
+
+**그래서 지금은 "구 컨테이너를 지우지 않는 것" 자체가 롤백 장치다.** `docker rm`·`docker system prune -a`를
+실행하지 않는다. 되돌리는 명령은 `docker run`이 아니라 `docker start`이며, 8081을 점유 중인 신규
+컨테이너를 먼저 내려야 한다 — 정확한 절차와 `icuh_platform_admin`을 되살리면 안 되는 이유는
+"실행 완료 기록 → 롤백 전제가 바뀌었다" 참고.
+
+- [x] **Step 5: 배포 디렉터리를 만든다**
 
 ```bash
 sudo mkdir -p /opt/icuh/logs/public
@@ -270,7 +444,7 @@ sudo chown -R "$USER":"$USER" /opt/icuh
 `public-api`의 기동 실패는 `docker compose logs`가 아니라 `/opt/icuh/logs/public/platform.log`에서
 읽는다. 자세한 내용은 `deploy/README.md`의 "로그" 절 참고.
 
-- [ ] **Step 6: 서비스별 `.env.<name>`을 작성한다**
+- [x] **Step 6: 서비스별 `.env.<name>`을 작성한다**
 
 저장소의 `deploy/.env.public.example` · `deploy/.env.admin.example` · `deploy/.env.open.example`을
 기준으로 실제 값을 채운다. 파일이 **세 개로 나뉜 이유**: 한 `.env`를 세 컨테이너가 공유하면 admin-api
@@ -296,11 +470,26 @@ grep -c CHANGEME /opt/icuh/.env.public /opt/icuh/.env.admin /opt/icuh/.env.open 
 실행 결과:
 
 ```
-(grep -c CHANGEME 세 줄 출력 — 예: /opt/icuh/.env.public:0 형태로 세 줄)
+세 파일 모두 작성 완료(권한 600 확인).
+
+$ ls -l /opt/icuh/.env.*
+-rw------- 1 ubuntu ubuntu 677 Aug 27 10:06 /opt/icuh/.env.admin
+-rw------- 1 ubuntu ubuntu 479 Aug 27 10:08 /opt/icuh/.env.open
+-rw------- 1 ubuntu ubuntu 658 Aug 27 10:09 /opt/icuh/.env.public
+
+값의 출처: `.example`의 CHANGEME를 새로 채운 것이 아니라, **구 컨테이너들의
+`docker inspect` 환경변수에서 그대로 옮겼다.** 구 앱이 실제로 쓰던 값이라
+운영 DB·S3에 그대로 붙는다. `admin`의 DB는 `open`과 동일한 `ACTUAL_DRGHT`를 쓴다.
+(운영 RDS는 VPC 안이라 EC2를 bastion으로 경유해야 접속된다.)
 
 ```
 
-- [ ] **Step 7: 배포할 커밋 SHA를 한 번만 정한다**
+- [x] **Step 7: 배포할 커밋 SHA를 한 번만 정한다** — *워크플로가 대체*
+
+> **[2026-08-27] 이 스텝은 사람이 SSH로 실행하지 않았다.** Step 7·8·10·11·12는 `Deploy` 워크플로
+> 실행(run [33029320575](https://github.com/icuh-lab/icuh-drought-platform/actions/runs/33029320575))이
+> 동일한 일을 대신했다. 결과는 스텝 끝에 기록했다.
+
 
 이 SHA는 Step 8(pull) · Step 10(기동) · Step 12(`.last-good` 기록)에서 **모두 같은 값**이어야 한다.
 그래서 여기서 한 번만 정하고 이후에는 `$TAG`로만 쓴다. `latest`를 쓰면 안 된다 — `.last-good`에는
@@ -331,11 +520,20 @@ Step 10으로 넘어가기 전에 이 블록부터 다시 실행한다.
 실행 결과:
 
 ```
-(정한 커밋 SHA와 "TAG OK" 출력)
+TAG = 91d0c9b24a546a6fc4eae903709add451e2bc92d  (main HEAD, 커밋 91d0c9b "Merge pull request #3")
+
+셸 변수로 정하지 않았다. `Deploy`를 `image_tag` 비운 채 `main`에서 실행하면 워크플로가
+`github.sha`를 태그로 잡으므로, 그 값이 그대로 이 자리의 TAG가 됐다. 아래 Step 8·10·12의
+결과가 모두 같은 SHA인 것이 그 증거다.
 
 ```
 
-- [ ] **Step 8: compose 파일을 배치하고 이미지를 미리 받아본다**
+- [x] **Step 8: compose 파일을 배치하고 이미지를 미리 받아본다** — *워크플로가 대체*
+
+> **[2026-08-27] 이 스텝은 사람이 SSH로 실행하지 않았다.** Step 7·8·10·11·12는 `Deploy` 워크플로
+> 실행(run [33029320575](https://github.com/icuh-lab/icuh-drought-platform/actions/runs/33029320575))이
+> 동일한 일을 대신했다. 결과는 스텝 끝에 기록했다.
+
 
 로컬에서 — 커밋 여부와 무관하게 **작업 트리의 파일이 그대로 올라간다.** Step 1에서 `mem_limit`을
 줄였다면 그 값이 이 `scp`로 반영된다:
@@ -363,11 +561,30 @@ access 설정을 차례로 의심한다.
 실행 결과:
 
 ```
-(docker compose pull 출력)
+워크플로의 `Sync compose file` + `Pull and start` 스텝이 대신 수행했다.
+
+**GHCR 로그인은 원문과 달리 사람의 PAT를 쓰지 않는다.** 워크플로의 `Log in to GHCR on EC2` 스텝이
+EC2에서 `docker login ghcr.io -u ${{ github.actor }} --password-stdin`을 실행하되, 비밀번호로
+**그 run에서만 유효한 `secrets.GITHUB_TOKEN`**을 넣는다. 원문 Step 8이 준비물로 요구한
+`read:packages` PAT는 결과적으로 쓰이지 않았다.
+
+세 이미지 모두 같은 태그로 받아졌음이 기동 결과로 확인된다:
+
+$ docker ps --format '{{.Names}}\t{{.Image}}'
+icuh-public-api   ghcr.io/icuh-lab/icuh-drought-platform/public-api:91d0c9b24a546a6fc4eae903709add451e2bc92d
+icuh-admin-api    ghcr.io/icuh-lab/icuh-drought-platform/admin-api:91d0c9b24a546a6fc4eae903709add451e2bc92d
+icuh-open-api     ghcr.io/icuh-lab/icuh-drought-platform/open-api:91d0c9b24a546a6fc4eae903709add451e2bc92d
+
+`/opt/icuh/docker-compose.yml`도 저장소 파일과 동일한 2099바이트로 올라가 있다(mem_limit 무수정).
 
 ```
 
-- [ ] **Step 9: 구 프로젝트의 배포 워크플로를 비활성화한다**
+- [x] **Step 9: 구 프로젝트의 배포 워크플로를 비활성화한다** — *대상이 하나가 아니었다*
+
+> **[2026-08-27] 구 저장소는 하나가 아니라 넷이다.** 이 스텝은 `icuh-platform` 하나만 가리키지만,
+> 실제로는 `icuh-platform` · `icuh-platform-api` · `icuh-platform-admin` · `icuh-platform-fo`가
+> 각각 자기 워크플로로 이 EC2에 배포한다. 스텝 끝에 넷을 모두 조사한 결과를 적었다.
+
 
 **Step 10 전에 한다.** 지금 8081을 쓰고 있는 구 앱은 구 저장소(`icuh-platform`)의 Actions 워크플로가
 `develop` 브랜치 push마다 EC2에 다시 배포한다. 그대로 두면 Step 10에서 구 컨테이너를 지운 뒤에도
@@ -384,11 +601,31 @@ EC2에서 직접 도는 명령이다.
 실행 결과:
 
 ```
-(비활성화한 저장소·워크플로 이름과, Actions 화면에 Disabled로 표시되는 것을 확인했다는 기록)
+`gh workflow list --all` 로 네 저장소를 모두 조사한 결과:
+
+| 저장소 | 워크플로 | 상태 | 판단 |
+|---|---|---|---|
+| `icuh-lab/icuh-platform` | icuh-platform CI/CD flow | **disabled_manually** | 껐다. 원문 Step 9가 가리킨 대상 |
+| `icuh-lab/icuh-platform-admin` | icuh-platform-admin CI/CD flow | **disabled_manually** | 껐다. 안 껐으면 인증 없는 구 admin이 `0.0.0.0:8082`로 되살아난다 |
+| `icuh-lab/icuh-platform-api` | icuh-platform CD flow | **active (의도적으로 켜 둠)** | 8080 구 API를 병행 운영하므로 살려 둔다 |
+| `icuh-lab/icuh-platform-fo` | icuh-platform-fo CI/CD | **active (미정리)** | 아래 경고 참고 |
+
+- `icuh-platform-api`를 켜 둬도 신규 앱과 충돌하지 않는다. 그 `cicd.yml`의 배포 스텝이
+  `docker stop icuh_platform_api && docker rm icuh_platform_api && docker run -d --name icuh_platform_api -p 8080:8080 ...`로
+  **8080과 자기 컨테이너만** 건드리기 때문이다. 트리거는 `workflow_run`(CI 성공 후)이다.
+- **`icuh-platform-fo`는 정리되지 않은 위험이다.** `docker run -d --name icuh-platform-fo -p 80:80 ...`으로
+  **80번 포트**에 배포한다. 컨테이너는 지금 `Exited (0)`이지만 push 한 번이면 되살아나고, 프론트를
+  Caddy(https)로 올릴 때 80번을 두고 충돌한다. 그 작업 전에 끄거나 구 FO를 정리할 것.
 
 ```
 
-- [ ] **Step 10: 구 컨테이너를 내리고 신 앱을 올린다**
+- [x] **Step 10: 구 컨테이너를 내리고 신 앱을 올린다** — *구 컨테이너는 내리지 않았다*
+
+> **[2026-08-27] 이 스텝의 파괴적 절반은 실행되지 않았다.** 컷오버 대상이 이미 죽어 있었으므로
+> `docker stop`·`docker rm`은 하지 않았고, 신규 3개를 올리는 `docker compose up`만 `Deploy`
+> 워크플로가 수행했다. **구 컨테이너 5개는 지금도 `exited` 상태로 남아 있다** — 그것이 현재의
+> 롤백 수단이다(Step 4 실행 결과 참고).
+
 
 **여기가 파괴적 단계다.** 컨테이너 이름은 Step 4에서 설정한 `$OLD`를, 이미지 태그는 Step 7에서
 설정한 `$TAG`를 그대로 쓴다 — 여기서 새로 적지 않는다(같은 값을 두 곳에 따로 적으면 한쪽만 고치는
@@ -425,11 +662,33 @@ EC2에서 직접 도는 명령이다.
 실행 결과:
 
 ```
-(docker compose ps 출력)
+`docker stop`·`docker rm`은 실행하지 않았다. 신규 3개만 올라갔다.
+
+$ docker ps --format '{{.Names}}\t{{.Ports}}\t{{.Status}}'
+icuh-admin-api      127.0.0.1:8082->8082/tcp                        Up
+icuh-public-api     0.0.0.0:8081->8081/tcp, [::]:8081->8081/tcp     Up
+icuh-open-api       0.0.0.0:8083->8083/tcp, [::]:8083->8083/tcp     Up
+icuh_platform_api   0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp     Up 4 days   ← 구 API, 그대로 둠
+
+`admin-api`가 `127.0.0.1:8082`에만 바인딩된 것을 호스트에서도 확인했다:
+
+$ ss -tlnp | grep -E '808[0-3]'
+LISTEN 0.0.0.0:8080   LISTEN 0.0.0.0:8081   LISTEN 127.0.0.1:8082   LISTEN 0.0.0.0:8083
+
+메모리 사용량(한도 대비):
+icuh-public-api  244.5MiB / 768MiB (31.8%)
+icuh-admin-api   244.2MiB / 512MiB (47.7%)
+icuh-open-api    248.0MiB / 512MiB (48.4%)
+icuh_platform_api 356.5MiB / 3.816GiB (9.1%)   ← 구 API에는 mem_limit이 없다. 호스트 전체를 자기 몫으로 본다.
 
 ```
 
-- [ ] **Step 11: 헬스체크로 확인한다**
+- [x] **Step 11: 헬스체크로 확인한다** — *워크플로가 대체*
+
+> **[2026-08-27] 이 스텝은 사람이 SSH로 실행하지 않았다.** Step 7·8·10·11·12는 `Deploy` 워크플로
+> 실행(run [33029320575](https://github.com/icuh-lab/icuh-drought-platform/actions/runs/33029320575))이
+> 동일한 일을 대신했다. 결과는 스텝 끝에 기록했다.
+
 
 ```bash
 curl -fsS localhost:8081/health && echo " public OK"
@@ -454,11 +713,29 @@ curl -fsS localhost:8083/health && echo " open OK"
 실행 결과:
 
 ```
-(세 curl 명령의 출력과 종료 여부)
+워크플로의 `Health check` 스텝이 통과했고, 이후 호스트에서도 직접 재확인했다.
+
+$ curl -fsS -o /dev/null -w '%{http_code}' localhost:8081/health  -> 200
+$ curl -fsS -o /dev/null -w '%{http_code}' localhost:8082/health  -> 200
+$ curl -fsS -o /dev/null -w '%{http_code}' localhost:8083/health  -> 200
+$ curl -fsS -o /dev/null -w '%{http_code}' localhost:8080/health  -> 200   (구 API, 참고)
+
+`public-api`의 파일 로그도 정상적으로 쓰이고 있다:
+$ ls -l /opt/icuh/logs/public/
+-rw-r--r-- 1 root root 3556 Aug 27 10:14 platform.log
+
+**되돌리기 안내 정정:** 이 스텝 본문의 `docker run ... icuh-platform:rollback` 명령은 지금 쓸 수 없다
+(그 이미지 태그를 만들지 않았다). `cd /opt/icuh && docker compose down && docker start icuh_platform`을
+쓴다 — "실행 완료 기록 → 롤백 전제가 바뀌었다" 참고.
 
 ```
 
-- [ ] **Step 12: 첫 성공 태그를 기록하고, 그 태그가 실재하는 이미지인지 확인한다**
+- [x] **Step 12: 첫 성공 태그를 기록하고, 그 태그가 실재하는 이미지인지 확인한다** — *워크플로가 대체*
+
+> **[2026-08-27] 이 스텝은 사람이 SSH로 실행하지 않았다.** Step 7·8·10·11·12는 `Deploy` 워크플로
+> 실행(run [33029320575](https://github.com/icuh-lab/icuh-drought-platform/actions/runs/33029320575))이
+> 동일한 일을 대신했다. 결과는 스텝 끝에 기록했다.
+
 
 `.last-good`은 배포 워크플로가 자동 롤백할 때 되돌릴 대상으로 읽는 유일한 파일이다. 여기에 적힌
 태그로 이미지를 **실제로 받을 수 없으면 자동 롤백은 그 순간 실패한다** — 그래서 기록하고 끝내지 않고
@@ -488,11 +765,33 @@ docker logout ghcr.io
 실행 결과:
 
 ```
-(기록한 커밋 SHA, ".last-good 검증 OK" 여부, docker logout 출력)
+$ cat /opt/icuh/.last-good
+91d0c9b24a546a6fc4eae903709add451e2bc92d
+
+$ ls -l /opt/icuh/.last-good
+-rw-rw-r-- 1 ubuntu ubuntu 41 Aug 27 10:14
+
+워크플로의 마지막 스텝이 헬스체크 통과 후 이 파일을 갱신했다. 기록된 태그가 실제로 떠 있는 세
+컨테이너의 이미지 태그와 **일치한다**(Step 8·10 결과 참고) — 원문이 pull로 검증하려던 조건이
+기동 자체로 충족됐다. **이 시점부터 워크플로의 자동 롤백이 성립한다.**
+
+`docker logout`도 워크플로가 대신 했다. `Log out of GHCR on EC2` 스텝이 `always()`로 걸려 있어
+**배포가 실패한 run에서도** 실행된다(성공 스텝에 묶어 두면 실패 시 토큰이 호스트에 남는다는 것이
+`deploy.yml`의 주석에 근거로 적혀 있다). 호스트에서 실제로 비어 있는 것을 확인했다:
+
+$ ls -l ~/.docker/config.json
+-rw------- 1 ubuntu ubuntu 103 Aug 27 10:14 /home/ubuntu/.docker/config.json
+$ grep -o '"auths":[^}]*}' ~/.docker/config.json
+(매치 없음 — 자격증명이 남아 있지 않다)
 
 ```
 
-- [ ] **Step 13: 보안그룹을 정리한다**
+- [x] **Step 13: 보안그룹을 정리한다** — *8083은 열지 않았다*
+
+> **[2026-08-27] 이 스텝은 사실상 생략됐다.** 8081은 구 앱 규칙이 남아 이미 열려 있었고, 8082는
+> 원래 안 여는 것이며, **8083은 열 대상 IP가 아직 정해지지 않아 보류했다.** 결과적으로 추가한
+> 규칙이 없다. 아래 원문의 "8083 — 새로 추가한다"는 아직 이행되지 않은 지시다.
+
 
 AWS 콘솔 → EC2 → 보안그룹 → 인바운드 규칙:
 
@@ -509,12 +808,26 @@ AWS 콘솔 → EC2 → 보안그룹 → 인바운드 규칙:
 실행 결과:
 
 ```
-(정리 후 인바운드 규칙 스냅샷 — 8081/8083 존재, 8082 부재, 22 상시 규칙 부재를 확인했다고 기록)
-(이 인스턴스의 보안그룹 ID)
+**추가한 규칙 없음.** 원문 지시와 실제가 다르다.
+
+| 포트 | 원문 지시 | 실제 |
+|---|---|---|
+| 8080 | (언급 없음) | **열림** — 구 API용. 이 문서가 예상하지 못한 항목이다 |
+| 8081 | 이미 열려 있다, 유지 | 열림 유지 ✓ 구 앱이 쓰던 규칙이 그대로 남아 있었다 |
+| 8082 | 추가하지 않는다 | 추가 안 함 ✓ `ss` 확인 결과 `127.0.0.1`에만 LISTEN |
+| 8083 | **새로 추가한다** | **추가하지 않았다 (보류)** |
+
+**8083을 보류한 이유:** 소스로 지정할 프론트 IP가 아직 없다. 프론트는 Caddy로 https를 쓸 예정인데
+아직 미배포다. 게다가 API가 raw http라 8083을 열더라도 https 페이지에서의 호출은 브라우저가 mixed
+content로 차단한다. **Caddy가 API도 함께 프록시하는 방향으로 합의했고, 그때 8083을 Caddy 서버 IP에만
+열고 8081은 오히려 닫는다.** 즉 이 표의 최종 형태는 아직 확정되지 않았다.
+
+보안그룹 ID: **미기록.** Step 14의 `AWS_SG_ID`가 유효하다는 것은 배포 성공으로 간접 확인됐지만
+(22번 포트 open/close가 동작했다), ID 값 자체를 이 문서에 적어 두지 않았다. 다음에 콘솔에 들어갈 때 채운다.
 
 ```
 
-- [ ] **Step 14: 이 저장소의 GitHub Secrets를 확인한다**
+- [x] **Step 14: 이 저장소의 GitHub Secrets를 확인한다**
 
 `deploy` 워크플로는 아래 6개 시크릿을 쓴다. 하나라도 비어 있거나 엉뚱한 곳을 가리키면 배포가
 실패하거나 — 더 나쁘게 — **엉뚱한 호스트/보안그룹에 배포한다.**
@@ -553,11 +866,25 @@ base64 < ~/경로/키.pem | gh secret set SSH_EC2_KEY
 실행 결과:
 
 ```
-(여섯 개 시크릿을 각각 언제/어떤 근거의 값으로 저장했는지 기록. 값 자체는 여기 적지 않는다.)
+`SSH_EC2_KEY`에서 실제로 두 번 데였고, 그 결과가 커밋 `29ea172`(PR #3)다.
+
+| 시크릿 | 상태 |
+|---|---|
+| `SSH_EC2_KEY` | **base64 한 줄로 재저장.** pem 원문을 넣었을 때 줄바꿈이 손상돼 `error in libcrypto`로 배포가 실패했다 |
+| `SSH_EC2_USER` | `ubuntu` |
+| `SSH_EC2_HOST` | `ec2-54-180-165-127.ap-northeast-2.compute.amazonaws.com` |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | 유효 — 22번 포트 open/close가 동작했다 |
+| `AWS_SG_ID` | 유효 — 위와 같은 근거. 단 ID 값은 Step 13에 미기록 |
+
+여섯 개가 모두 맞다는 것은 눈으로 대조해서가 아니라 **run 33029320575가 끝까지 통과한 것으로**
+증명됐다. 실패한 두 번은 `SSH_EC2_KEY` 하나 때문이었다:
+
+- run 33028012736 (`workflow_dispatch`, 19s, failure) — `Write SSH key`에서 키 손상
+- run 33028206514 (push, 2m6s, failure) — 같은 원인
 
 ```
 
-- [ ] **Step 15: 런북 결과를 커밋하고, Deploy를 수동 실행해 마무리한다**
+- [x] **Step 15: 런북 결과를 커밋하고, Deploy를 수동 실행해 마무리한다**
 
 **이 런북에서 커밋하는 지점은 여기 하나뿐이다.** 중간에 커밋하면 `main` 푸시가 `Deploy`를 깨워
 아직 세팅 중인 호스트로 배포가 나간다. Step 1에서 `mem_limit`을 조정했다면 그 변경도 여기서 함께
@@ -576,14 +903,24 @@ git commit -m "docs: EC2 최초 세팅 런북과 실행 결과 기록"
 `main`에 푸시했다면 그 push로도 `Deploy`가 한 번 돈다 — 그 실행이 통과했다면 수동 실행은 생략해도
 된다.)
 
-> 이 문서를 저장소에 처음 추가하는 커밋(본 작업)은 위 절차를 아직 아무것도 실행하지 않은 상태로
-> 만들어졌으므로, "실행 결과" 슬롯이 비어 있다. 실제 EC2 세팅을 수행한 뒤 이 커밋 메시지로 결과를
-> 채워 다시 커밋하는 것은 운영자의 몫이다.
+> ~~이 문서를 저장소에 처음 추가하는 커밋(본 작업)은 위 절차를 아직 아무것도 실행하지 않은 상태로
+> 만들어졌으므로, "실행 결과" 슬롯이 비어 있다.~~
+> **[2026-08-27] 슬롯을 모두 채웠다.** 다만 실행 당시의 원본 콘솔 출력은 보존하지 못해, 각 슬롯의
+> 값은 배포 직후 같은 날 EC2에 다시 접속해 재확인한 실측이다(`docker ps` · `ss` · `curl` ·
+> `cat .last-good` · `gh run list` · `gh workflow list`). 재확인할 수 없었던 항목(`df -h /`,
+> 보안그룹 ID)은 슬롯에 "보존하지 못함" · "미기록"이라고 명시해 두었다 — 추정해서 채우지 않았다.
 
 실행 결과:
 
 ```
-(수동 실행한 Deploy run의 링크와 결과)
+**run [33029320575](https://github.com/icuh-lab/icuh-drought-platform/actions/runs/33029320575)**
+— `workflow_dispatch`, `main`, `image_tag` 비움, 2026-08-27T01:11:52Z UTC 시작, 2m50s, **success**.
+
+빌드 → GHCR 푸시 → SSH 배포 → 헬스체크 → `.last-good` 갱신까지 파이프라인 전체가 실제로 도는 것이
+이 실행으로 확인됐다.
+
+`docker-compose.yml` 변경은 없다(Step 1에서 `mem_limit` 조정이 불필요했다). 이 커밋은 런북 문서
+하나만 담는다.
 
 ```
 
