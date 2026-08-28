@@ -35,8 +35,9 @@ public class FreshFoodService {
                 .map(FreshVegetableIndex::of)
                 .toList();
 
-        // 등급별 카운트
+        // 등급별 카운트 - 등급 없는(지수가 빈) 지역은 groupingBy의 null 키가 되어 NPE를 내므로 제외한다.
         Map<String, Long> summary = provinceData.stream()
+                .filter(index -> index.grade() != null)
                 .collect(groupingBy(FreshVegetableIndex::grade, counting()));
 
         return FreshVegetableIndexResponse.of(baseDate, provinceData, summary);
@@ -51,8 +52,9 @@ public class FreshFoodService {
                 .map(FreshFruitIndex::of)
                 .toList();
 
-        // 등급별 카운트
+        // 등급별 카운트 - 등급 없는(지수가 빈) 지역은 groupingBy의 null 키가 되어 NPE를 내므로 제외한다.
         Map<String, Long> summary = provinceData.stream()
+                .filter(index -> index.grade() != null)
                 .collect(groupingBy(FreshFruitIndex::grade, counting()));
 
         return FreshFruitIndexResponse.of(baseDate, provinceData, summary);

@@ -1,6 +1,7 @@
 package re.kr.icuh.drought.persistence.openapi.freshfood;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -22,5 +23,13 @@ class FreshFoodGradeTest {
     @DisplayName("지수 임계값에 따라 등급 라벨을 매긴다 (경계 포함)")
     void mapsIndexToGradeLabel(float index, String expected) {
         assertThat(FreshFoodGrade.labelOf(index)).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("지수가 비어 있으면 등급을 매기지 않는다 - null을 등급으로 둔갑시키지 않는다")
+    void doesNotGradeMissingIndex() {
+        Float missing = null;
+
+        assertThat(FreshFoodGrade.labelOf(missing)).isNull();
     }
 }
