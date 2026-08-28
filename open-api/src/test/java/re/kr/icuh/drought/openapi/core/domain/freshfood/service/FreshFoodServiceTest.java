@@ -33,6 +33,13 @@ class FreshFoodServiceTest {
         return freshFood;
     }
 
+    private FreshFood freshFoodWithoutIndex(String province) {
+        FreshFood freshFood = mock(FreshFood.class);
+        when(freshFood.getProvince()).thenReturn(province);
+        when(freshFood.getFreshVegetableIndex()).thenReturn(null);
+        return freshFood;
+    }
+
     @Test
     @DisplayName("연/월을 해당 월 1일의 baseDate로 변환해 조회한다")
     void resolvesBaseDateFromYearMonth() {
@@ -89,5 +96,45 @@ class FreshFoodServiceTest {
         assertThat(response.summary())
                 .containsEntry("low", 1L)
                 .containsEntry("veryLow", 1L);
+    }
+
+    @Test
+    @DisplayName("처음 보는 지역명이 섞여도 그 달 전체를 버리지 않고 코드 0으로 함께 내려준다")
+    void keepsMonthAliveWhenProvinceIsUnknown() {
+        FreshFood seoul = freshFood("서울특별시", 100f);
+        FreshFood merged = freshFood("전남광주통합특별시", 104.03f);
+        FreshFood unknown = freshFood("대구경북통합특별시", 102f);
+        when(freshFoodRepository.findByBaseDate("2026-06-01")).thenReturn(List.of(seoul, merged, unknown));
+
+        FreshVegetableIndexResponse response =
+                freshFoodService.getFreshVegetableIndex(new FreshFoodIndexRequest("2026", "6"));
+
+        assertThat(response.provinceData())
+                .extracting("province", "code")
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple("서울특별시", 11),
+                        org.assertj.core.groups.Tuple.tuple("전남광주통합특별시", 53),
+                        org.assertj.core.groups.Tuple.tuple("대구경북통합특별시", 0)
+                );
+        assertThat(response.summary()).containsEntry("normal", 3L);
+    }
+
+    @Test
+    @DisplayName("지수가 비어 있는 시도는 행은 남기되 등급 집계에서는 뺀다")
+    void keepsProvinceWithoutIndexOutOfSummary() {
+        FreshFood seoul = freshFood("서울특별시", 100f);
+        FreshFood sejong = freshFoodWithoutIndex("세종특별자치시");
+        when(freshFoodRepository.findByBaseDate("2026-06-01")).thenReturn(List.of(seoul, sejong));
+
+        FreshVegetableIndexResponse response =
+                freshFoodService.getFreshVegetableIndex(new FreshFoodIndexRequest("2026", "6"));
+
+        assertThat(response.provinceData()).hasSize(2);
+        assertThat(response.provinceData())
+                .extracting("province", "grade")
+                .contains(org.assertj.core.groups.Tuple.tuple("세종특별자치시", null));
+        assertThat(response.summary())
+                .containsEntry("normal", 1L)
+                .hasSize(1);
     }
 }

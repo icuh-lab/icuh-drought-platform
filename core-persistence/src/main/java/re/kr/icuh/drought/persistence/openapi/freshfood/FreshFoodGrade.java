@@ -25,8 +25,16 @@ public enum FreshFoodGrade {
         return label;
     }
 
-    /** 지수값을 등급 라벨로 변환한다. 임계값은 내림차순으로 평가한다. */
-    public static String labelOf(float index) {
+    /**
+     * 지수값을 등급 라벨로 변환한다. 임계값은 내림차순으로 평가한다.
+     * 지수가 비어 있으면 등급도 없다 - 없는 값을 veryLow로 둔갑시키면 지도에 없는 가뭄이 그려진다.
+     * 파라미터가 {@code float}이던 시절에는 여기서 언박싱 NPE가 나 그 달 전체가 500이 됐다.
+     */
+    public static String labelOf(Float index) {
+        if (index == null) {
+            return null;
+        }
+
         for (FreshFoodGrade grade : values()) {
             if (index >= grade.threshold) {
                 return grade.label;
