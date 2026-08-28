@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
 
@@ -41,6 +42,19 @@ public class ApiControllerAdvice {
         return new ResponseEntity<>(
                 ApiResponse.error(ErrorType.INVALID_PARAMETER, errorMessage),
                 ErrorType.INVALID_PARAMETER.getStatus());
+    }
+
+    /**
+     * 매핑되지 않은 경로. 이 핸들러가 없으면 아래 catch-all에 걸려 500이 나가고,
+     * URL 오타와 실제 장애를 응답만 보고 구분할 수 없게 된다.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<?>> handleNoResourceFound(NoResourceFoundException e) {
+        log.warn("NoResourceFoundException: {}", e.getMessage());
+
+        return new ResponseEntity<>(
+                ApiResponse.error(ErrorType.ENDPOINT_NOT_FOUND),
+                ErrorType.ENDPOINT_NOT_FOUND.getStatus());
     }
 
     @ExceptionHandler(Exception.class)
