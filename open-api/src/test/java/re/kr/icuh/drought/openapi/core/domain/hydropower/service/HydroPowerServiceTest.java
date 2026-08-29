@@ -86,6 +86,36 @@ class HydroPowerServiceTest {
     }
 
     @Test
+    @DisplayName("월간 발전량은 repository가 반환한 순서를 그대로 보존한다 (뒤섞인 순서를 서비스가 재정렬하지 않음)")
+    void mapsMonthlyGenerationPreservesRepositoryOrderEvenWhenScrambled() {
+        // repository mock이 연-월 오름차순이 아니라 일부러 뒤섞인 순서(10월 -> 2월 -> 1월)로 반환하도록 설정한다.
+        // 실제 정렬 보장은 HydroPowerRepository의 JPQL ORDER BY가 책임지며, 이 테스트는 mock 레벨에서
+        // 서비스가 그 순서를 임의로 바꾸지 않고 그대로 전달하는지만 확인한다(= mock으로는 JPQL의
+        // ORDER BY 자체를 검증할 수 없음. 실제 정렬 검증은 core-persistence의 HydroPowerRepositoryTest 참고).
+        DamMonthlyGeneration october = mock(DamMonthlyGeneration.class);
+        when(october.getDamName()).thenReturn("소양강댐");
+        lenient().when(october.getMonth()).thenReturn("10");
+        lenient().when(october.getActualMwh()).thenReturn(1010);
+
+        DamMonthlyGeneration february = mock(DamMonthlyGeneration.class);
+        lenient().when(february.getMonth()).thenReturn("2");
+        lenient().when(february.getActualMwh()).thenReturn(202);
+
+        DamMonthlyGeneration january = mock(DamMonthlyGeneration.class);
+        lenient().when(january.getMonth()).thenReturn("1");
+        lenient().when(january.getActualMwh()).thenReturn(101);
+
+        when(hydroPowerRepository.damMonthlyGeneration("2026", "소양강댐"))
+                .thenReturn(List.of(october, february, january));
+
+        DamMonthlyGenerationResponse response = hydroPowerService.getMonthlyGeneration(yearlyRequest);
+
+        assertThat(response.monthlyGenerationDto())
+                .extracting("month")
+                .containsExactly("10", "2", "1");
+    }
+
+    @Test
     @DisplayName("월간 발전량이 비어 있으면 DATA_NOT_FOUND 예외를 던진다")
     void throwsWhenGenerationEmpty() {
         when(hydroPowerRepository.damMonthlyGeneration("2026", "소양강댐"))
