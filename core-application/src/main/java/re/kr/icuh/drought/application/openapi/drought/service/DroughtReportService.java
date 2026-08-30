@@ -14,9 +14,11 @@ import re.kr.icuh.drought.domain.drought.DroughtImpactField;
 import re.kr.icuh.drought.domain.drought.ReportGrade;
 import re.kr.icuh.drought.persistence.openapi.drought.entity.DroughtMonthlyReport;
 import re.kr.icuh.drought.persistence.openapi.drought.entity.DroughtMonthlyReportBucket;
+import re.kr.icuh.drought.persistence.openapi.drought.entity.DroughtReportGradeBreak;
 import re.kr.icuh.drought.persistence.openapi.drought.repository.DroughtMonthlyReportBucketRepository;
 import re.kr.icuh.drought.persistence.openapi.drought.repository.DroughtMonthlyReportRepository;
 import re.kr.icuh.drought.persistence.openapi.drought.repository.DroughtMonthlyReportSidoStatusRepository;
+import re.kr.icuh.drought.persistence.openapi.drought.repository.DroughtReportGradeBreakRepository;
 
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -36,15 +38,18 @@ public class DroughtReportService {
     private final DroughtMonthlyReportRepository reportRepository;
     private final DroughtMonthlyReportBucketRepository bucketRepository;
     private final DroughtMonthlyReportSidoStatusRepository sidoStatusRepository;
+    private final DroughtReportGradeBreakRepository gradeBreakRepository;
 
     public DroughtReportService(
             DroughtMonthlyReportRepository reportRepository,
             DroughtMonthlyReportBucketRepository bucketRepository,
-            DroughtMonthlyReportSidoStatusRepository sidoStatusRepository
+            DroughtMonthlyReportSidoStatusRepository sidoStatusRepository,
+            DroughtReportGradeBreakRepository gradeBreakRepository
     ) {
         this.reportRepository = reportRepository;
         this.bucketRepository = bucketRepository;
         this.sidoStatusRepository = sidoStatusRepository;
+        this.gradeBreakRepository = gradeBreakRepository;
     }
 
     public Page<DroughtReportListResponse> getReports(Pageable pageable) {
@@ -58,13 +63,29 @@ public class DroughtReportService {
         DroughtMonthlyReport report = reportRepository.findById(reportYm)
                 .orElseThrow(() -> new CoreException(ErrorType.DATA_NOT_FOUND));
 
+        Map<String, Map<ReportGrade, Double>> gradeBreaks = loadLatestGradeBreaks();
+
         List<RegionSectionResponse> regions = groupByRegion(bucketRepository.findByReportYm(reportYm)).entrySet().stream()
                 .sorted(Comparator.<Map.Entry<RegionKey, List<DroughtMonthlyReportBucket>>, String>comparing(e -> e.getKey().sido())
                         .thenComparing(e -> e.getKey().sigungu()))
-                .map(e -> RegionSectionResponse.of(e.getKey().sido(), e.getKey().sigungu(), e.getValue()))
+                .map(e -> RegionSectionResponse.of(e.getKey().sido(), e.getKey().sigungu(), e.getValue(), gradeBreaks))
                 .toList();
 
         return DroughtReportDetailResponse.of(report, sidoStatusRepository.findByReportYm(reportYm), regions);
+    }
+
+    /**
+     * 가장 최근 재보정 버전의 등급별 하한값을 영향분야별로 묶는다. 재보정이 한 번도 안 됐으면 빈 맵
+     * (모든 버킷의 gradeLowerBound/nextGradeLowerBound가 null로 내려간다 — 버그 아님, ImpactBucketResponse 참고).
+     */
+    private Map<String, Map<ReportGrade, Double>> loadLatestGradeBreaks() {
+        return gradeBreakRepository.findMaxVersion()
+                .map(gradeBreakRepository::findByVersion)
+                .orElseGet(List::of)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        DroughtReportGradeBreak::getImpactCode,
+                        Collectors.toMap(DroughtReportGradeBreak::getGrade, DroughtReportGradeBreak::getLowerBound)));
     }
 
     public List<SummaryAlertResponse> getLatestDroughtAlerts() {

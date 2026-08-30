@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import re.kr.icuh.drought.application.openapi.drought.response.DroughtReportDetailResponse;
 import re.kr.icuh.drought.application.openapi.drought.response.DroughtReportListResponse;
+import re.kr.icuh.drought.application.openapi.drought.response.ImpactBucketResponse;
 import re.kr.icuh.drought.application.openapi.summary.response.SummaryAlertResponse;
 import re.kr.icuh.drought.common.openapi.error.CoreException;
 import re.kr.icuh.drought.common.openapi.error.ErrorType;
@@ -19,9 +20,11 @@ import re.kr.icuh.drought.domain.drought.ReportGrade;
 import re.kr.icuh.drought.persistence.openapi.drought.entity.DroughtMonthlyReport;
 import re.kr.icuh.drought.persistence.openapi.drought.entity.DroughtMonthlyReportBucket;
 import re.kr.icuh.drought.persistence.openapi.drought.entity.DroughtMonthlyReportSidoStatus;
+import re.kr.icuh.drought.persistence.openapi.drought.entity.DroughtReportGradeBreak;
 import re.kr.icuh.drought.persistence.openapi.drought.repository.DroughtMonthlyReportBucketRepository;
 import re.kr.icuh.drought.persistence.openapi.drought.repository.DroughtMonthlyReportRepository;
 import re.kr.icuh.drought.persistence.openapi.drought.repository.DroughtMonthlyReportSidoStatusRepository;
+import re.kr.icuh.drought.persistence.openapi.drought.repository.DroughtReportGradeBreakRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,12 +44,14 @@ class DroughtReportServiceTest {
     private DroughtMonthlyReportBucketRepository bucketRepository;
     @Mock
     private DroughtMonthlyReportSidoStatusRepository sidoStatusRepository;
+    @Mock
+    private DroughtReportGradeBreakRepository gradeBreakRepository;
 
     private DroughtReportService service;
 
     @BeforeEach
     void setUp() {
-        service = new DroughtReportService(reportRepository, bucketRepository, sidoStatusRepository);
+        service = new DroughtReportService(reportRepository, bucketRepository, sidoStatusRepository, gradeBreakRepository);
     }
 
     @Test
@@ -96,6 +101,44 @@ class DroughtReportServiceTest {
         assertThat(detail.regions().get(0).sido()).isEqualTo("강원");
         assertThat(detail.regions().get(0).sigungu()).isEqualTo("강릉");
         assertThat(detail.regions().get(0).impactFields()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("재보정 버전이 하나도 없으면 gradeLowerBound/nextGradeLowerBound는 null이다")
+    void detailGradeLowerBoundNullWhenNoBreaksExist() {
+        DroughtMonthlyReport report = report("2026-05", 748, 16);
+        when(reportRepository.findById("2026-05")).thenReturn(Optional.of(report));
+        when(sidoStatusRepository.findByReportYm("2026-05")).thenReturn(List.of());
+        when(bucketRepository.findByReportYm("2026-05")).thenReturn(List.of(
+                bucket("2026-05", "강원", "강릉", "A1", 12, ReportGrade.심각)
+        ));
+        when(gradeBreakRepository.findMaxVersion()).thenReturn(Optional.empty());
+
+        ImpactBucketResponse field = service.getReportDetail("2026-05").regions().get(0).impactFields().get(0);
+
+        assertThat(field.gradeLowerBound()).isNull();
+        assertThat(field.nextGradeLowerBound()).isNull();
+    }
+
+    @Test
+    @DisplayName("재보정 버전이 있으면 최신 버전의 등급 기준선을 채운다")
+    void detailFillsGradeLowerBoundFromLatestBreaksVersion() {
+        DroughtMonthlyReport report = report("2026-05", 748, 16);
+        when(reportRepository.findById("2026-05")).thenReturn(Optional.of(report));
+        when(sidoStatusRepository.findByReportYm("2026-05")).thenReturn(List.of());
+        when(bucketRepository.findByReportYm("2026-05")).thenReturn(List.of(
+                bucket("2026-05", "강원", "강릉", "A1", 12, ReportGrade.경계)
+        ));
+        when(gradeBreakRepository.findMaxVersion()).thenReturn(Optional.of(2));
+        when(gradeBreakRepository.findByVersion(2)).thenReturn(List.of(
+                gradeBreak(2, "A1", ReportGrade.경계, 8.0),
+                gradeBreak(2, "A1", ReportGrade.심각, 15.0)
+        ));
+
+        ImpactBucketResponse field = service.getReportDetail("2026-05").regions().get(0).impactFields().get(0);
+
+        assertThat(field.gradeLowerBound()).isEqualTo(8.0);
+        assertThat(field.nextGradeLowerBound()).isEqualTo(15.0);
     }
 
     @Test
@@ -169,6 +212,13 @@ class DroughtReportServiceTest {
                 .representativeLink("https://example.com")
                 .keywords(List.of("가뭄"))
                 .relevanceFlag(false).continuityCount(1)
+                .build();
+    }
+
+    private static DroughtReportGradeBreak gradeBreak(int version, String impactCode, ReportGrade grade, double lowerBound) {
+        return DroughtReportGradeBreak.builder()
+                .version(version).impactCode(impactCode).grade(grade)
+                .lowerBound(lowerBound).computedAt(LocalDateTime.of(2026, 8, 30, 0, 0))
                 .build();
     }
 }

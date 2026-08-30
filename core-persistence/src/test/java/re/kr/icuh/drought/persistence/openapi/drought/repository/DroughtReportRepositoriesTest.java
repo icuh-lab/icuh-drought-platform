@@ -15,6 +15,7 @@ import re.kr.icuh.drought.persistence.openapi.drought.entity.DroughtMonthlyRepor
 import re.kr.icuh.drought.persistence.openapi.drought.entity.DroughtMonthlyReportBucket;
 import re.kr.icuh.drought.persistence.openapi.drought.entity.DroughtMonthlyReportBucketId;
 import re.kr.icuh.drought.persistence.openapi.drought.entity.DroughtMonthlyReportSidoStatus;
+import re.kr.icuh.drought.persistence.openapi.drought.entity.DroughtReportGradeBreak;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,6 +33,8 @@ class DroughtReportRepositoriesTest {
     private DroughtMonthlyReportBucketRepository bucketRepository;
     @Autowired
     private DroughtMonthlyReportSidoStatusRepository sidoStatusRepository;
+    @Autowired
+    private DroughtReportGradeBreakRepository gradeBreakRepository;
     @Autowired
     private TestEntityManager entityManager;
 
@@ -93,6 +96,32 @@ class DroughtReportRepositoriesTest {
                 .extracting(DroughtMonthlyReportSidoStatus::getSido)
                 .containsExactly("강원");
         assertThat(sidoStatusRepository.findByReportYm("2026-05")).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("findMaxVersion은 가장 최근 재보정 버전을 반환하고, findByVersion은 그 버전의 breaks만 반환한다")
+    void findsLatestVersionBreaksOnly() {
+        gradeBreakRepository.save(gradeBreak(1, "A1", ReportGrade.주의, 3.0));
+        gradeBreakRepository.save(gradeBreak(1, "A1", ReportGrade.경계, 8.0));
+        gradeBreakRepository.save(gradeBreak(2, "A1", ReportGrade.주의, 4.0));
+
+        assertThat(gradeBreakRepository.findMaxVersion()).contains(2);
+        assertThat(gradeBreakRepository.findByVersion(2))
+                .extracting(DroughtReportGradeBreak::getLowerBound)
+                .containsExactly(4.0);
+    }
+
+    @Test
+    @DisplayName("breaks가 하나도 없으면 findMaxVersion은 빈 값이다")
+    void findMaxVersionEmptyWhenNoBreaksExist() {
+        assertThat(gradeBreakRepository.findMaxVersion()).isEmpty();
+    }
+
+    private static DroughtReportGradeBreak gradeBreak(int version, String impactCode, ReportGrade grade, double lowerBound) {
+        return DroughtReportGradeBreak.builder()
+                .version(version).impactCode(impactCode).grade(grade)
+                .lowerBound(lowerBound).computedAt(LocalDateTime.of(2026, 8, 30, 0, 0))
+                .build();
     }
 
     private static DroughtMonthlyReport report(String ym, int articleCount, int detectedSidoCount) {
