@@ -131,6 +131,19 @@ class DroughtReportServiceTest {
         assertThat(alerts.get(0).relatedReportCount()).isEqualTo(2);
     }
 
+    @Test
+    @DisplayName("최신 리포트의 모든 버킷이 관심/주의 등급이면 alerts는 빈 리스트다")
+    void alertsEmptyWhenNoBucketReachesThreshold() {
+        DroughtMonthlyReport report = report("2026-05", 748, 16);
+        when(reportRepository.findTopByOrderByReportYmDesc()).thenReturn(Optional.of(report));
+        when(bucketRepository.findByReportYm("2026-05")).thenReturn(List.of(
+                bucket("2026-05", "강원", "강릉", "A1", 12, ReportGrade.관심),
+                bucket("2026-05", "경남", "합천", "A5", 5, ReportGrade.주의)
+        ));
+
+        assertThat(service.getLatestDroughtAlerts()).isEmpty();
+    }
+
     private static DroughtMonthlyReport report(String ym, int articleCount, int detectedSidoCount) {
         return DroughtMonthlyReport.builder()
                 .reportYm(ym)

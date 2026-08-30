@@ -47,4 +47,16 @@ class SummaryServiceTest {
 
         assertThat(summary.alerts()).isEmpty();
     }
+
+    @Test
+    @DisplayName("drought 알림 조회가 실패해도 summary는 alerts 빈 리스트로 정상 응답한다")
+    void fallsBackToEmptyAlertsWhenDroughtReportServiceFails() {
+        when(droughtReportService.getLatestDroughtAlerts()).thenThrow(new RuntimeException("drought table missing"));
+
+        SummaryService summaryService = new SummaryService(droughtReportService);
+        SummaryResponse summary = summaryService.getSummary();
+
+        assertThat(summary.alerts()).isEmpty();
+        assertThat(summary.kpis()).isEqualTo(List.of());
+    }
 }
