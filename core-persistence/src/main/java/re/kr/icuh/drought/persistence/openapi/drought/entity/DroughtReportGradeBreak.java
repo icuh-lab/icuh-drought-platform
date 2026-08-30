@@ -30,7 +30,7 @@ public class DroughtReportGradeBreak {
     private Integer version;
 
     @Id
-    @Column(name = "impact_code", length = 2)
+    @Column(name = "impact_code", length = 2, nullable = false)
     private String impactCode;
 
     @Id

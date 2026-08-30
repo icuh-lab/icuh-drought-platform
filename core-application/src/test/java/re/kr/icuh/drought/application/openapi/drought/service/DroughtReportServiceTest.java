@@ -104,13 +104,13 @@ class DroughtReportServiceTest {
     }
 
     @Test
-    @DisplayName("재보정 버전이 하나도 없으면 gradeLowerBound/nextGradeLowerBound는 null이다")
+    @DisplayName("재보정 버전이 하나도 없으면 확정된 버킷도 gradeLowerBound/nextGradeLowerBound는 null이다")
     void detailGradeLowerBoundNullWhenNoBreaksExist() {
         DroughtMonthlyReport report = report("2026-05", 748, 16);
         when(reportRepository.findById("2026-05")).thenReturn(Optional.of(report));
         when(sidoStatusRepository.findByReportYm("2026-05")).thenReturn(List.of());
         when(bucketRepository.findByReportYm("2026-05")).thenReturn(List.of(
-                bucket("2026-05", "강원", "강릉", "A1", 12, ReportGrade.심각)
+                finalizedBucket("2026-05", "강원", "강릉", "A1", 12, ReportGrade.심각)
         ));
         when(gradeBreakRepository.findMaxVersion()).thenReturn(Optional.empty());
 
@@ -121,13 +121,13 @@ class DroughtReportServiceTest {
     }
 
     @Test
-    @DisplayName("재보정 버전이 있으면 최신 버전의 등급 기준선을 채운다")
+    @DisplayName("확정된 버킷은 최신 버전의 등급 기준선을 채운다")
     void detailFillsGradeLowerBoundFromLatestBreaksVersion() {
         DroughtMonthlyReport report = report("2026-05", 748, 16);
         when(reportRepository.findById("2026-05")).thenReturn(Optional.of(report));
         when(sidoStatusRepository.findByReportYm("2026-05")).thenReturn(List.of());
         when(bucketRepository.findByReportYm("2026-05")).thenReturn(List.of(
-                bucket("2026-05", "강원", "강릉", "A1", 12, ReportGrade.경계)
+                finalizedBucket("2026-05", "강원", "강릉", "A1", 12, ReportGrade.경계)
         ));
         when(gradeBreakRepository.findMaxVersion()).thenReturn(Optional.of(2));
         when(gradeBreakRepository.findByVersion(2)).thenReturn(List.of(
@@ -139,6 +139,47 @@ class DroughtReportServiceTest {
 
         assertThat(field.gradeLowerBound()).isEqualTo(8.0);
         assertThat(field.nextGradeLowerBound()).isEqualTo(15.0);
+    }
+
+    @Test
+    @DisplayName("확정 안 된 버킷은 기준선이 있어도 gradeLowerBound/nextGradeLowerBound가 null이다")
+    void detailGradeLowerBoundNullWhenBucketNotFinalized() {
+        DroughtMonthlyReport report = report("2026-05", 748, 16);
+        when(reportRepository.findById("2026-05")).thenReturn(Optional.of(report));
+        when(sidoStatusRepository.findByReportYm("2026-05")).thenReturn(List.of());
+        when(bucketRepository.findByReportYm("2026-05")).thenReturn(List.of(
+                bucket("2026-05", "강원", "강릉", "A1", 12, ReportGrade.관심)
+        ));
+        when(gradeBreakRepository.findMaxVersion()).thenReturn(Optional.of(2));
+        when(gradeBreakRepository.findByVersion(2)).thenReturn(List.of(
+                gradeBreak(2, "A1", ReportGrade.관심, 1.0),
+                gradeBreak(2, "A1", ReportGrade.주의, 5.0)
+        ));
+
+        ImpactBucketResponse field = service.getReportDetail("2026-05").regions().get(0).impactFields().get(0);
+
+        assertThat(field.gradeLowerBound()).isNull();
+        assertThat(field.nextGradeLowerBound()).isNull();
+    }
+
+    @Test
+    @DisplayName("확정된 최고 등급(심각)은 자기 기준선은 채우고 nextGradeLowerBound는 null이다")
+    void detailNextGradeLowerBoundNullAtTopGradeWithRealBreaks() {
+        DroughtMonthlyReport report = report("2026-05", 748, 16);
+        when(reportRepository.findById("2026-05")).thenReturn(Optional.of(report));
+        when(sidoStatusRepository.findByReportYm("2026-05")).thenReturn(List.of());
+        when(bucketRepository.findByReportYm("2026-05")).thenReturn(List.of(
+                finalizedBucket("2026-05", "강원", "강릉", "A1", 20, ReportGrade.심각)
+        ));
+        when(gradeBreakRepository.findMaxVersion()).thenReturn(Optional.of(2));
+        when(gradeBreakRepository.findByVersion(2)).thenReturn(List.of(
+                gradeBreak(2, "A1", ReportGrade.심각, 15.0)
+        ));
+
+        ImpactBucketResponse field = service.getReportDetail("2026-05").regions().get(0).impactFields().get(0);
+
+        assertThat(field.gradeLowerBound()).isEqualTo(15.0);
+        assertThat(field.nextGradeLowerBound()).isNull();
     }
 
     @Test
@@ -208,6 +249,20 @@ class DroughtReportServiceTest {
         return DroughtMonthlyReportBucket.builder()
                 .reportYm(ym).sido(sido).sigungu(sigungu).impactCode(impactCode)
                 .articleCount(articleCount).grade(grade)
+                .representativeTitle("대표기사 " + sido + sigungu)
+                .representativeLink("https://example.com")
+                .keywords(List.of("가뭄"))
+                .relevanceFlag(false).continuityCount(1)
+                .build();
+    }
+
+    private static DroughtMonthlyReportBucket finalizedBucket(
+            String ym, String sido, String sigungu, String impactCode, int articleCount, ReportGrade grade
+    ) {
+        return DroughtMonthlyReportBucket.builder()
+                .reportYm(ym).sido(sido).sigungu(sigungu).impactCode(impactCode)
+                .articleCount(articleCount).grade(grade)
+                .gradeFinalizedAt(LocalDateTime.of(2026, 9, 30, 0, 0))
                 .representativeTitle("대표기사 " + sido + sigungu)
                 .representativeLink("https://example.com")
                 .keywords(List.of("가뭄"))
