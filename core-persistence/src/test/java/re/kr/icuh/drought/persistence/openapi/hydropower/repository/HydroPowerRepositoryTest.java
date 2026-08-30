@@ -14,6 +14,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.util.ReflectionTestUtils;
 import re.kr.icuh.drought.persistence.openapi.hydropower.entity.DamMonthlyGeneration;
+import re.kr.icuh.drought.persistence.openapi.hydropower.entity.DamMonthlyPrediction;
 import re.kr.icuh.drought.persistence.openapi.hydropower.entity.DamMonthlyReservoirStatus;
 
 import java.util.List;
@@ -87,6 +88,29 @@ class HydroPowerRepositoryTest {
                 .containsExactly("1", "2", "10", "12");
     }
 
+    @Test
+    @DisplayName("예측 이력은 저장 순서와 무관하게 연-월 오름차순으로, 연도 경계를 넘어서도 반환된다")
+    void damMonthlyPredictionsIsOrderedByYearThenMonthAscending() {
+        persistPrediction("2025", "11", "대청댐");
+        persistPrediction("2026", "2", "대청댐");
+        persistPrediction("2024", "12", "대청댐");
+        persistPrediction("2026", "1", "대청댐");
+        entityManager.flush();
+        entityManager.clear();
+
+        List<DamMonthlyPrediction> result =
+                hydroPowerRepository.damMonthlyPredictions("대청댐");
+
+        assertThat(result)
+                .extracting(DamMonthlyPrediction::getYear, DamMonthlyPrediction::getMonth)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("2024", "12"),
+                        org.assertj.core.groups.Tuple.tuple("2025", "11"),
+                        org.assertj.core.groups.Tuple.tuple("2026", "1"),
+                        org.assertj.core.groups.Tuple.tuple("2026", "2")
+                );
+    }
+
     private void persistGeneration(String year, String month, String damName) {
         DamMonthlyGeneration entity = new DamMonthlyGeneration();
         ReflectionTestUtils.setField(entity, "year", year);
@@ -97,6 +121,14 @@ class HydroPowerRepositoryTest {
 
     private void persistReservoirStatus(String year, String month, String damName) {
         DamMonthlyReservoirStatus entity = new DamMonthlyReservoirStatus();
+        ReflectionTestUtils.setField(entity, "year", year);
+        ReflectionTestUtils.setField(entity, "month", month);
+        ReflectionTestUtils.setField(entity, "damName", damName);
+        entityManager.persist(entity);
+    }
+
+    private void persistPrediction(String year, String month, String damName) {
+        DamMonthlyPrediction entity = new DamMonthlyPrediction();
         ReflectionTestUtils.setField(entity, "year", year);
         ReflectionTestUtils.setField(entity, "month", month);
         ReflectionTestUtils.setField(entity, "damName", damName);

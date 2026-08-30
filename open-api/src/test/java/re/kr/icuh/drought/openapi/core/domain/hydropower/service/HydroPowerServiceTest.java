@@ -1,8 +1,10 @@
 package re.kr.icuh.drought.application.openapi.hydropower.service;
 
+import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerDamRequest;
 import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerRequest;
 import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerYearlyRequest;
 import re.kr.icuh.drought.application.openapi.hydropower.response.generation.DamMonthlyGenerationResponse;
+import re.kr.icuh.drought.application.openapi.hydropower.response.prediction.MonthlyDamPredictionHistoryResponse;
 import re.kr.icuh.drought.application.openapi.hydropower.response.prediction.MonthlyDamPredictionResponse;
 import re.kr.icuh.drought.persistence.openapi.hydropower.entity.DamMonthlyGeneration;
 import re.kr.icuh.drought.persistence.openapi.hydropower.entity.DamMonthlyPrediction;
@@ -36,6 +38,7 @@ class HydroPowerServiceTest {
 
     private final HydroPowerRequest request = new HydroPowerRequest("2026", "4", "소양강댐");
     private final HydroPowerYearlyRequest yearlyRequest = new HydroPowerYearlyRequest("2026", "소양강댐");
+    private final HydroPowerDamRequest damRequest = new HydroPowerDamRequest("소양강댐");
 
     @Test
     @DisplayName("월간 댐 예측을 조회해 중첩 응답 DTO로 매핑한다")
@@ -122,6 +125,44 @@ class HydroPowerServiceTest {
                 .thenReturn(List.of());
 
         assertThatThrownBy(() -> hydroPowerService.getMonthlyGeneration(yearlyRequest))
+                .isInstanceOf(CoreException.class)
+                .hasFieldOrPropertyWithValue("errorType", ErrorType.DATA_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("댐의 전체 예측 이력을 헤더 + 항목 리스트로 매핑한다")
+    void mapsMonthlyPredictionHistory() {
+        DamMonthlyPrediction first = mock(DamMonthlyPrediction.class);
+        when(first.getDamName()).thenReturn("소양강댐");
+        when(first.getDamCode()).thenReturn("1012110");
+        lenient().when(first.getYear()).thenReturn("2024");
+        lenient().when(first.getMonth()).thenReturn("12");
+        DamMonthlyPrediction second = mock(DamMonthlyPrediction.class);
+        lenient().when(second.getYear()).thenReturn("2025");
+        lenient().when(second.getMonth()).thenReturn("1");
+        when(hydroPowerRepository.damMonthlyPredictions("소양강댐"))
+                .thenReturn(List.of(first, second));
+
+        MonthlyDamPredictionHistoryResponse response = hydroPowerService.getMonthlyPredictionHistory(damRequest);
+
+        assertThat(response.damName()).isEqualTo("소양강댐");
+        assertThat(response.damCode()).isEqualTo("1012110");
+        assertThat(response.entries()).hasSize(2);
+        assertThat(response.entries())
+                .extracting("year", "month")
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("2024", "12"),
+                        org.assertj.core.groups.Tuple.tuple("2025", "1")
+                );
+    }
+
+    @Test
+    @DisplayName("예측 이력이 비어 있으면 DATA_NOT_FOUND 예외를 던진다")
+    void throwsWhenPredictionHistoryEmpty() {
+        when(hydroPowerRepository.damMonthlyPredictions("소양강댐"))
+                .thenReturn(List.of());
+
+        assertThatThrownBy(() -> hydroPowerService.getMonthlyPredictionHistory(damRequest))
                 .isInstanceOf(CoreException.class)
                 .hasFieldOrPropertyWithValue("errorType", ErrorType.DATA_NOT_FOUND);
     }

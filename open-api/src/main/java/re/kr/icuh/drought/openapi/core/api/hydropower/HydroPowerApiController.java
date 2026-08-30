@@ -1,9 +1,11 @@
 package re.kr.icuh.drought.openapi.core.api.hydropower;
 
+import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerDamRequest;
 import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerRequest;
 import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerYearlyRequest;
 import re.kr.icuh.drought.application.openapi.hydropower.response.comparison.DamMonthlyComparisonResponse;
 import re.kr.icuh.drought.application.openapi.hydropower.response.generation.DamMonthlyGenerationResponse;
+import re.kr.icuh.drought.application.openapi.hydropower.response.prediction.MonthlyDamPredictionHistoryResponse;
 import re.kr.icuh.drought.application.openapi.hydropower.response.prediction.MonthlyDamPredictionResponse;
 import re.kr.icuh.drought.application.openapi.hydropower.response.reservoir.DamMonthlyReservoirStatusResponse;
 import re.kr.icuh.drought.application.openapi.hydropower.service.HydroPowerService;
@@ -54,5 +56,13 @@ public class HydroPowerApiController {
         DamMonthlyReservoirStatusResponse damMonthlyReservoirStatusDto = hydroPowerService.getMonthlyReservoirStatus(hydroPowerYearlyRequestDto);
 
         return ApiResponse.success(damMonthlyReservoirStatusDto);
+    }
+
+    @GetMapping("/monthly-predict-history")
+    public ApiResponse<MonthlyDamPredictionHistoryResponse> getMonthlyPredictionHistory(@Valid @ModelAttribute HydroPowerDamRequest hydroPowerDamRequestDto) {
+
+        MonthlyDamPredictionHistoryResponse monthlyDamPredictionHistoryDto = hydroPowerService.getMonthlyPredictionHistory(hydroPowerDamRequestDto);
+
+        return ApiResponse.success(monthlyDamPredictionHistoryDto);
     }
 }

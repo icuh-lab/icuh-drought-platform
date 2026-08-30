@@ -2,6 +2,7 @@ package re.kr.icuh.drought.openapi.core.api.hydropower;
 
 import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerRequest;
 import re.kr.icuh.drought.application.openapi.hydropower.response.generation.DamMonthlyGenerationResponse;
+import re.kr.icuh.drought.application.openapi.hydropower.response.prediction.MonthlyDamPredictionHistoryResponse;
 import re.kr.icuh.drought.application.openapi.hydropower.response.prediction.MonthlyDamPredictionResponse;
 import re.kr.icuh.drought.application.openapi.hydropower.service.HydroPowerService;
 import org.junit.jupiter.api.DisplayName;
@@ -93,6 +94,28 @@ class HydroPowerApiControllerTest {
                         .param("year", "2026")
                         .param("month", "13")
                         .param("damName", "소양강댐"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.result").value("ERROR"))
+                .andExpect(jsonPath("$.error.code").value("E400"));
+    }
+
+    @Test
+    @DisplayName("댐 이름만으로 전체 예측 이력을 연도 없이 조회할 수 있다")
+    void monthlyPredictionHistoryDoesNotRequireYear() throws Exception {
+        when(hydroPowerService.getMonthlyPredictionHistory(any()))
+                .thenReturn(MonthlyDamPredictionHistoryResponse.builder().damName("소양강댐").build());
+
+        mockMvc.perform(get("/api/v1/hydropower/monthly-predict-history")
+                        .param("damName", "소양강댐"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.damName").value("소양강댐"));
+    }
+
+    @Test
+    @DisplayName("댐 이름이 없으면 예측 이력 조회는 400을 응답한다")
+    void monthlyPredictionHistoryRequiresDamName() throws Exception {
+        mockMvc.perform(get("/api/v1/hydropower/monthly-predict-history"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.result").value("ERROR"))
                 .andExpect(jsonPath("$.error.code").value("E400"));

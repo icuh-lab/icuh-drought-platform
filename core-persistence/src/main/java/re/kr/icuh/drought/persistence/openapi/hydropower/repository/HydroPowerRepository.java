@@ -18,6 +18,9 @@ public interface HydroPowerRepository extends JpaRepository<DamMonthlyPrediction
     @Query("SELECT d FROM DamMonthlyPrediction d WHERE d.year = :year AND d.month = :month AND d.damName = :damName")
     Optional<DamMonthlyPrediction> damMonthlyPrediction(@Param("year") String year, @Param("month") String month, @Param("damName") String damName);
 
+    @Query("SELECT d FROM DamMonthlyPrediction d WHERE d.damName = :damName ORDER BY CAST(d.year AS integer) ASC, CAST(d.month AS integer) ASC")
+    List<DamMonthlyPrediction> damMonthlyPredictions(@Param("damName") String damName);
+
     @Query("SELECT d FROM DamMonthlyComparison d WHERE d.year = :year AND d.month = :month AND d.damName = :damName")
     Optional<DamMonthlyComparison> damMonthlyComparison(@Param("year") String year, @Param("month") String month, @Param("damName") String damName);
 

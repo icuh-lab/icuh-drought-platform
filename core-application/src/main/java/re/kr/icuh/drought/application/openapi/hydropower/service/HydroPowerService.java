@@ -1,12 +1,15 @@
 package re.kr.icuh.drought.application.openapi.hydropower.service;
 
+import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerDamRequest;
 import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerRequest;
 import re.kr.icuh.drought.application.openapi.hydropower.request.HydroPowerYearlyRequest;
 import re.kr.icuh.drought.application.openapi.hydropower.response.comparison.DamMonthlyComparisonResponse;
 import re.kr.icuh.drought.application.openapi.hydropower.response.generation.DamMonthlyGenerationResponse;
+import re.kr.icuh.drought.application.openapi.hydropower.response.prediction.MonthlyDamPredictionHistoryResponse;
 import re.kr.icuh.drought.application.openapi.hydropower.response.prediction.MonthlyDamPredictionResponse;
 import re.kr.icuh.drought.application.openapi.hydropower.response.reservoir.DamMonthlyReservoirStatusResponse;
 import re.kr.icuh.drought.persistence.openapi.hydropower.entity.DamMonthlyGeneration;
+import re.kr.icuh.drought.persistence.openapi.hydropower.entity.DamMonthlyPrediction;
 import re.kr.icuh.drought.persistence.openapi.hydropower.entity.DamMonthlyReservoirStatus;
 import re.kr.icuh.drought.persistence.openapi.hydropower.repository.HydroPowerRepository;
 import re.kr.icuh.drought.common.openapi.error.CoreException;
@@ -60,5 +63,15 @@ public class HydroPowerService {
         }
 
         return DamMonthlyReservoirStatusResponse.of(statuses);
+    }
+
+    public MonthlyDamPredictionHistoryResponse getMonthlyPredictionHistory(HydroPowerDamRequest request) {
+        List<DamMonthlyPrediction> predictions = hydroPowerRepository.damMonthlyPredictions(request.damName());
+
+        if (predictions.isEmpty()) {
+            throw new CoreException(ErrorType.DATA_NOT_FOUND);
+        }
+
+        return MonthlyDamPredictionHistoryResponse.of(predictions);
     }
 }
